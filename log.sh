@@ -2,6 +2,12 @@
 
 LOG_LEVEL=${LOG_LEVEL:-"info"}
 
+if [[ -t 1 ]] && [[ "$TERM" = *"color"* ]]; then
+  COLOR="true"
+else
+  COLOR="false"
+fi
+
 COLOR=${COLOR:-"true"}
 
 V_BOLD_RED=$'\e[1;31m'
