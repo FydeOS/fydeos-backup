@@ -195,7 +195,7 @@ tar_backup_files() {
   temp_meta_dir=$(mktemp -d "/tmp/fydeos_backup_XXXXXXXX") || fatal "Failed to create temporary directory"
   local meta_file="backup_meta.json"
   local meta_file_path="$temp_meta_dir/$meta_file"
-  generate_metadata_for_backup_file "$email" "$timestamp" "$meta_file_path"
+  generate_metadata_for_backup_file "$email" "$datetime" "$meta_file_path"
 
   # shellcheck disable=SC2064
   trap "rm -f $tmp; rm -f $meta_file_path; rmdir $temp_meta_dir" SIGINT SIGTERM
