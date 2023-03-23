@@ -1,21 +1,9 @@
 #!/usr/bin/env bash
 
-SCRIPT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-readonly SCRIPT_ROOT_DIR
+MY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+readonly MY_SCRIPT_DIR
 
-source "$SCRIPT_ROOT_DIR/log.sh"
-
-set -o errexit
-set -o pipefail
-set -o nounset
-
-CHROME_PROFILE_SUBDIR_NAME="user"
-readonly CHROME_PROFILE_SUBDIR_NAME
-ANDROID_DATA_SUBDIR_NAME="root/android-data"
-readonly ANDROID_DATA_SUBDIR_NAME
-
-INTERMEDIATE_BACKUP_RESTORE_FILE_PATH="/mnt/stateful_partition/encrypted/chronos/.fydeos_backup"
-readonly INTERMEDIATE_BACKUP_RESTORE_FILE_PATH
+source "$MY_SCRIPT_DIR/base.sh"
 
 PREFERENCE_JSON_FILE_NAME="Preferences"
 readonly PREFERENCE_JSON_FILE_NAME
@@ -25,20 +13,9 @@ readonly MY_FILES_PATH_NAME
 DOWNLOADS_PATH_NAME="Downloads" # same with "MyFiles/Downloads", do not clean it or backup it
 readonly DOWNLOADS_PATH_NAME
 
-GPG_HOMEDIR="/tmp/fydeos_backup/gnupg"
-readonly GPG_HOMEDIR
-GPG_BIN="gpg --homedir $GPG_HOMEDIR"
-readonly GPG_BIN
-
 CURRENT_USER_BASE_PATH=""
 CURRENT_USER_CHROME_DATA_DIR=""
 CURRENT_USER_ANDROID_DATA_DIR=""
-
-prepare_gpg() {
-  mkdir -p "$GPG_HOMEDIR"
-  chmod 700 "$GPG_HOMEDIR"
-  $GPG_BIN -k > /dev/null 2>&1 || { fatal "Failed to prepare gpg"; }
-}
 
 parse_email_from_preference_file() {
  local file="$1"
@@ -48,17 +25,6 @@ parse_email_from_preference_file() {
    error "Unable to find email from preference file: $file"
    echo ""
  fi
-}
-
-get_hash_from_email() {
- local email="$1"
- cryptohome --action=obfuscate_user --user="$email" || echo ""
-}
-
-assert_current_mount_status() {
-  if ! findmnt "/home/chronos/user" -o SOURCE | grep -q shadow || [[ ! -f "/home/chronos/user/${PREFERENCE_JSON_FILE_NAME}" ]]; then
-    fatal "No user mounted at /home/chronos/user, cannot backup or restore"
-  fi
 }
 
 get_current_user_hash_id() {
@@ -122,23 +88,15 @@ generate_key_for_backup_file() {
   echo -n "$u:$p" | sha1sum | awk '{print $1}' | cut -c -16
 }
 
-kb2gb() {
-  local kb="$1"
-  echo "scale=2; $kb / 1024 / 1024" | bc | awk '{printf "%.2f", $0}'
-}
-
-get_folder_size() {
-  local d="$1"
-  if [[ ! -d "$d" ]]; then
-    echo "0"
-    return
+assert_current_mount_status() {
+  local mounted=""
+  mounted=$(cryptohome --action=is_mounted)
+  if [[ "$mounted" != "true" ]]; then
+    fatal "cryptohome is not mounted, cannot backup or restore"
   fi
-  du -sk "$d" | awk '{print $1}'
-}
-
-get_available_space() {
-  local p="$1"
-  df -lk "$p" | grep "$p" | awk '{print $4}'
+  if ! findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
+    fatal "No user mounted at /home/chronos/user, cannot backup or restore"
+  fi
 }
 
 print_files_to_backup_disk_usage() {
@@ -180,6 +138,9 @@ tar_backup_files() {
   local pass="$2"
   local base_dir=""
   base_dir=$(get_current_user_base_path)
+  if [[ -z "$base_dir" ]] || [[ ! -d "$base_dir" ]]; then
+    fatal "Unable to get current user base path"
+  fi
   echo "Tar backup files ${base_dir}/${CHROME_PROFILE_SUBDIR_NAME} and ${base_dir}/${ANDROID_DATA_SUBDIR_NAME}"
   local filename=""
   local datetime=""

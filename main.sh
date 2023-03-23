@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 SCRIPT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-source "$SCRIPT_ROOT_DIR/common.sh"
+
+source "$SCRIPT_ROOT_DIR/base.sh"
+source "$SCRIPT_ROOT_DIR/backup.sh"
 
 set -o errexit
 
@@ -126,6 +128,7 @@ verify_params() {
 
 do_backup() {
   set_log_prefix "backup"
+  assert_current_mount_status
   USER_EMAIL=$(get_current_user_email)
   if [[ -z "$USER_EMAIL" ]]; then
     prompt_for_email
