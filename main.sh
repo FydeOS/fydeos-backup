@@ -53,7 +53,7 @@ EOF
 }
 
 prompt_info() {
-  echo "${V_BOLD_GREEN}$*${V_VIDOFF}"
+  echo "${V_BOLD_GREEN}$* ${V_VIDOFF}"
 }
 
 prompt_for_password() {
@@ -125,6 +125,7 @@ verify_params() {
 }
 
 do_backup() {
+  set_log_prefix "backup"
   USER_EMAIL=$(get_current_user_email)
   if [[ -z "$USER_EMAIL" ]]; then
     prompt_for_email

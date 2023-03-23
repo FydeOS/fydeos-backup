@@ -95,7 +95,7 @@ get_current_user_email() {
   local email=""
   email=$(parse_email_from_preference_file "$path/${PREFERENCE_JSON_FILE_NAME}")
   local hash_from_email=""
-  debug "email: $email"
+  debug "get current user email: $email"
   hash_from_email=$(get_hash_from_email "$email")
   local hash_from_findmnt=""
   hash_from_findmnt=$(get_current_user_hash_id)
@@ -235,5 +235,5 @@ tar_backup_files() {
 
   chown chronos:chronos "$final"
 
-  echo "Tar backup files done, find the file $filename in Downloads folder"
+  info "Tar backup files done, find the file $filename in Downloads folder"
 }
