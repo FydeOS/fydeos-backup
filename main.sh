@@ -30,18 +30,18 @@ usage() {
 Usage: $0 [backup|restore] [OPTIONS]
 
 Commands:
-  backup              Perform a backup of the data
-  restore             Restore the data from a backup file
+  backup                  Perform a backup of the data
+  restore                 Restore the data from a backup file
 
 Options for backup:
-  --with-myfiles      Include 'My Files' in the backup
-  --password <pass>   Specify the password to verify user identity and encrypt the backup file
-                      Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
-  -d, --debug         Enable debug mode
+  --with-myfiles          Include 'My Files' in the backup
+  --password <pass>       Specify the password to verify user identity and encrypt the backup file
+                          Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
+  -d, --debug             Enable debug mode
 
 Options for restore:
-  --restore-mode <mode>   Specify the restore mode: ${RESTORE_MODE_MERGE} or ${RESTORE_MODE_REPLACE} (default: ${DEFAULT_RESTORE_MODE})
   -f, --file <file>       Specify the backup file to restore from
+  --restore-mode <mode>   Specify the restore mode: ${RESTORE_MODE_MERGE} or ${RESTORE_MODE_REPLACE} (default: ${DEFAULT_RESTORE_MODE})
   -n, --new <email>       Create a new user with a given email and restore data for that user
   --password <pass>       Specify a password for new user's encrypted directory and decrypting backup file
                           Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
@@ -191,6 +191,7 @@ main() {
     esac
   done
   print_params
+  verify_params
 
   prepare_gpg
   if [[ "$ACTION" = "$ACTION_BACKUP" ]]; then
