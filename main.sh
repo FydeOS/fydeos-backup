@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 
 SCRIPT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+readonly SCRIPT_ROOT_DIR
+SCRIPT_LIB_DIR="$SCRIPT_ROOT_DIR/lib"
+readonly SCRIPT_LIB_DIR
 
-source "$SCRIPT_ROOT_DIR/base.sh"
-source "$SCRIPT_ROOT_DIR/backup.sh"
+# shellcheck source=lib/base.sh
+source "$SCRIPT_LIB_DIR/base.sh"
+# shellcheck source=lib/backup.sh
+source "$SCRIPT_LIB_DIR/backup.sh"
 
 set -o errexit
 
@@ -55,7 +60,7 @@ EOF
 }
 
 prompt_info() {
-  echo "${V_BOLD_GREEN}$* ${V_VIDOFF}"
+  echo "${V_BOLD_GREEN}$*${V_VIDOFF}"
 }
 
 prompt_for_password() {
@@ -80,7 +85,7 @@ prompt_for_password() {
 }
 
 prompt_for_email() {
-  local prompt="Please enter the email of current logged-in user, which is the email of the account you want to backup:"
+  local prompt="Please enter the email of current logged-in user, which is the email of the account you want to backup: "
   while true; do
     read -p "$(prompt_info "$prompt")" -r email
     if [[ -z "$email" ]]; then

@@ -3,7 +3,8 @@
 [[ "${_BASE_SCRIPT_SOURCE:-""}" == "yes" ]] && return 0
 _BASE_SCRIPT_SOURCE=yes
 
-source "$SCRIPT_ROOT_DIR/log.sh"
+# shellcheck source=./lib/log.sh
+source "$SCRIPT_LIB_DIR/log.sh"
 
 set -o errexit
 set -o pipefail
@@ -53,4 +54,10 @@ get_folder_size() {
 get_available_space() {
   local p="$1"
   df -lk "$p" | grep "$p" | awk '{print $4}'
+}
+
+generate_checksum_based_on_email_and_time() {
+  local email="$1"
+  local datetime="$2"
+  echo -n "${email}:${datetime}" | sha256sum | awk '{print $1}'
 }

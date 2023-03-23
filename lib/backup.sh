@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-MY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-readonly MY_SCRIPT_DIR
-
-source "$MY_SCRIPT_DIR/base.sh"
+# shellcheck source=./lib/base.sh
+source "$SCRIPT_LIB_DIR/base.sh"
 
 PREFERENCE_JSON_FILE_NAME="Preferences"
 readonly PREFERENCE_JSON_FILE_NAME
@@ -118,15 +116,15 @@ print_files_to_backup_disk_usage() {
 
 generate_metadata_for_backup_file() {
   local email="$1"
-  local timestamp="$2"
+  local datetime="$2"
   local file="$3"
   local content=""
   local checksum=""
-  checksum=$(echo -n "${email}:${timestamp}" | sha256sum | awk '{print $1}')
+  checksum=$(generate_checksum_based_on_email_and_time "$email" "$datetime")
   content="$(cat << EOF
 {
   "checksum": "$checksum",
-  "datetime": "$timestamp"
+  "datetime": "$datetime"
 }
 EOF
 )"
@@ -136,14 +134,17 @@ EOF
 tar_with_metadata() {
   local key="$1"
   local target="$2"
-  local temp_meta_dir="$3"
-  local meta_file="$4"
+  local meta_file_path="$3"
+  local temp_meta_dir=""
+  local meta_file=""
   local base_dir=""
   base_dir=$(get_current_user_base_path)
   if [[ -z "$base_dir" ]] || [[ ! -d "$base_dir" ]]; then
     fatal "Unable to get current user base path"
   fi
   echo "Tar backup files ${base_dir}/${CHROME_PROFILE_SUBDIR_NAME} and ${base_dir}/${ANDROID_DATA_SUBDIR_NAME}"
+  temp_meta_dir=$(dirname "$meta_file_path")
+  meta_file=$(basename "$meta_file_path")
 
   set +o pipefail
   if [[ "$WITH_MY_FILES" = "false" ]]; then
@@ -199,7 +200,7 @@ tar_backup_files() {
   local key=""
   key=$(generate_key_for_backup_file "$email" "$pass")
   debug "password for encryped backup file: $key"
-  tar_with_metadata "$key" "$tmp" "$temp_meta_dir" "$meta_file"
+  tar_with_metadata "$key" "$tmp" "$meta_file_path"
   if [[ ! -f "$tmp" ]]; then
     fatal "Faile to tar backup file"
   fi
