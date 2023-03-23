@@ -133,15 +133,49 @@ EOF
   echo "$content" > "${file}"
 }
 
-tar_backup_files() {
-  local email="$1"
-  local pass="$2"
+tar_with_metadata() {
+  local key="$1"
+  local target="$2"
+  local temp_meta_dir="$3"
+  local meta_file="$4"
   local base_dir=""
   base_dir=$(get_current_user_base_path)
   if [[ -z "$base_dir" ]] || [[ ! -d "$base_dir" ]]; then
     fatal "Unable to get current user base path"
   fi
   echo "Tar backup files ${base_dir}/${CHROME_PROFILE_SUBDIR_NAME} and ${base_dir}/${ANDROID_DATA_SUBDIR_NAME}"
+
+  set +o pipefail
+  if [[ "$WITH_MY_FILES" = "false" ]]; then
+    tar --preserve-permissions \
+      -czvf - \
+      -C "${temp_meta_dir}" \
+      "$meta_file" \
+      -C "${base_dir}" \
+      --exclude "${CHROME_PROFILE_SUBDIR_NAME}/${MY_FILES_PATH_NAME}" \
+      --exclude "${CHROME_PROFILE_SUBDIR_NAME}/${DOWNLOADS_PATH_NAME}" \
+      "${CHROME_PROFILE_SUBDIR_NAME}" \
+      "${ANDROID_DATA_SUBDIR_NAME}" 2> /dev/null \
+      | $GPG_BIN -v --passphrase "$key" -c -o "${target}"
+  else
+    #always exclude DOWNLOADS_PATH_NAME(Downloads) folder, even if myfiles is enabled, since downloads folder are the same with MyFiles/Downloads
+    tar --preserve-permissions \
+      -czvf - \
+      -C "${temp_meta_dir}" \
+      "$meta_file" \
+      -C "${base_dir}" \
+      --exclude "${CHROME_PROFILE_SUBDIR_NAME}/${DOWNLOADS_PATH_NAME}" \
+      "${CHROME_PROFILE_SUBDIR_NAME}" \
+      "${ANDROID_DATA_SUBDIR_NAME}" 2> /dev/null \
+      | $GPG_BIN -v --passphrase "$key" -c -o "${target}"
+  fi
+  sync
+  set -o pipefail
+}
+
+tar_backup_files() {
+  local email="$1"
+  local pass="$2"
   local filename=""
   local datetime=""
   datetime="$(date +%Y%m%d_%H%M%S)"
@@ -165,32 +199,10 @@ tar_backup_files() {
   local key=""
   key=$(generate_key_for_backup_file "$email" "$pass")
   debug "password for encryped backup file: $key"
-  set +o pipefail
-  if [[ "$WITH_MY_FILES" = "false" ]]; then
-    tar --preserve-permissions \
-      -czvf - \
-      -C "${temp_meta_dir}" \
-      "$meta_file" \
-      -C "${base_dir}" \
-      --exclude "${CHROME_PROFILE_SUBDIR_NAME}/${MY_FILES_PATH_NAME}" \
-      --exclude "${CHROME_PROFILE_SUBDIR_NAME}/${DOWNLOADS_PATH_NAME}" \
-      "${CHROME_PROFILE_SUBDIR_NAME}" \
-      "${ANDROID_DATA_SUBDIR_NAME}" 2> /dev/null \
-      | $GPG_BIN -v --passphrase "$key" -c -o "${tmp}"
-  else
-    #always exclude DOWNLOADS_PATH_NAME(Downloads) folder, even if myfiles is enabled, since downloads folder are the same with MyFiles/Downloads
-    tar --preserve-permissions \
-      -czvf - \
-      -C "${temp_meta_dir}" \
-      "$meta_file" \
-      -C "${base_dir}" \
-      --exclude "${CHROME_PROFILE_SUBDIR_NAME}/${DOWNLOADS_PATH_NAME}" \
-      "${CHROME_PROFILE_SUBDIR_NAME}" \
-      "${ANDROID_DATA_SUBDIR_NAME}" 2> /dev/null \
-      | $GPG_BIN -v --passphrase "$key" -c -o "${tmp}"
+  tar_with_metadata "$key" "$tmp" "$temp_meta_dir" "$meta_file"
+  if [[ ! -f "$tmp" ]]; then
+    fatal "Faile to tar backup file"
   fi
-  sync
-  set -o pipefail
 
   mv "${tmp}" "${final}"
 
