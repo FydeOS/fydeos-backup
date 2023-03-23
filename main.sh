@@ -52,19 +52,22 @@ EOF
   exit "${1:-0}"
 }
 
+prompt_info() {
+  echo "${V_BOLD_GREEN}$*${V_VIDOFF}"
+}
+
 prompt_for_password() {
   if [[ -n "$PASSWORD" ]]; then
     warn "Setting password in command line arguments is not recommended. The script will prompt for your password."
     return
   fi
   local prompt="Enter Password:"
-  local email=""
   if [[ "$ACTION" = "$ACTION_BACKUP" ]]; then
     prompt="The current logged-in user is $USER_EMAIL, please enter the login password to verify your identity, and the password will be used to encrypt the backup file:"
   elif [[ "$ACTION" = "$ACTION_RESTORE" ]] && [[ "$CREATE_NEW_USER" = "true" ]]; then
     prompt="Please enter the password for decrypting the backup file and create encrypted directory for the new user:"
   fi
-  while IFS= read -p "$prompt" -r -s -n 1 char; do
+  while IFS= read -p "$(prompt_info "$prompt")" -r -s -n 1 char; do
     if [[ $char == $'\0' ]]; then
       break
     fi
@@ -72,6 +75,19 @@ prompt_for_password() {
     PASSWORD+="$char"
   done
   echo
+}
+
+prompt_for_email() {
+  local prompt="Please enter the email of current logged-in user, which is the email of the account you want to backup:"
+  while true; do
+    read -p "$(prompt_info "$prompt")" -r email
+    if [[ -z "$email" ]]; then
+      error "Email cannot be empty"
+    else
+      break
+    fi
+  done
+  USER_EMAIL="$email"
 }
 
 print_params() {
@@ -110,6 +126,9 @@ verify_params() {
 
 do_backup() {
   USER_EMAIL=$(get_current_user_email)
+  if [[ -z "$USER_EMAIL" ]]; then
+    prompt_for_email
+  fi
   prompt_for_password
   verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
 

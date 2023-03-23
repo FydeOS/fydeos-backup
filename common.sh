@@ -101,7 +101,8 @@ get_current_user_email() {
   hash_from_findmnt=$(get_current_user_hash_id)
   if [[ ! "$hash_from_findmnt" = "$hash_from_email" ]]; then
     debug "hash_from_findmnt: $hash_from_findmnt, hash_from_email: $hash_from_email"
-    fatal "Unable to find the correct email of current logged in user"
+    error "Unable to find the correct email of current logged in user"
+    email=""
   fi
   echo "$email"
 }
