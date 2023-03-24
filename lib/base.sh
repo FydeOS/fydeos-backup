@@ -158,11 +158,12 @@ generate_key_for_backup_file() {
 assert_current_mount_status() {
   local mounted=""
   mounted=$(cryptohome --action=is_mounted)
+  local extra_msg="you may want to create a new user and restore data for the user, use -n <email> to specify the email"
   if [[ "$mounted" != "true" ]]; then
-    fatal "cryptohome is not mounted, cannot backup or restore"
+    fatal "cryptohome is not mounted, cannot backup or restore, $extra_msg"
   fi
   if ! findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
-    fatal "No user mounted at /home/chronos/user, cannot backup or restore"
+    fatal "No user mounted at /home/chronos/user, cannot backup or restore, $extra_msg"
   fi
 }
 

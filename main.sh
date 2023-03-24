@@ -219,20 +219,17 @@ do_restore() {
   local restore_path=""
   prompt_for_password
   if [[ "$CREATE_NEW_USER" = "true" ]]; then
-    create_user "$USER_EMAIL" "$PASSWORD"
     local path=""
     path=$(get_mount_path_by_email "$USER_EMAIL")
-    assert_new_user_path_created "$USER_EMAIL" "$path"
     restore_path="$path"
   else
     restore_path=$(get_current_user_base_path)
   fi
 
-  restore_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE" "$restore_path"
+  restore_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE" "$restore_path" "$CREATE_NEW_USER"
 
   if [[ "$CREATE_NEW_USER" = "true" ]]; then
-    invalidate_auth_session || true
-    cryptohome_unmount || true
+    post_create_user
   fi
 }
 

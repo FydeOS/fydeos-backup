@@ -34,7 +34,7 @@ assert_new_user_path_created() {
 }
 
 clean_intermediate_files() {
-  echo "Clean intermediate files"
+  debug "Clean intermediate files"
   rm -fr "${BACKUP_FILE_CHROME_PROFILE_DIR_NAME}"
   rm -fr "${BACKUP_FILE_ANDROID_DATA_DIR_NAME}"
   clean_path "${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}"
@@ -189,6 +189,7 @@ restore_backup_files() {
   local pass="$2"
   local backup_file="$3"
   local restore_path="$4"
+  local create_new_user="$5"
   RESTORE_DATA_BASE_PATH="$restore_path"
 
   if [[ ! -f "$backup_file" ]]; then
@@ -202,6 +203,12 @@ restore_backup_files() {
 
   assert_backup_metadata "$email"
 
+  if [[ "$create_new_user" = "true" ]]; then
+    create_user "$USER_EMAIL" "$PASSWORD"
+    assert_new_user_path_created "$USER_EMAIL" "$restore_path"
+  fi
+
+
   stop_chronos_processes || { error "Failed to stop chronos processes, abort"; restart_ui; exit 1; }
   set +o errexit # disable exit on error, we need to restart ui anyway
   restore_chrome_profile
@@ -210,4 +217,7 @@ restore_backup_files() {
 
   restart_ui
   info "Restore completed."
+  if [[ "$create_new_user" = "true" ]]; then
+    info "The cryptohome and data is ready for user $email, you need to go back to Chromium, and login with the email"
+  fi
 }

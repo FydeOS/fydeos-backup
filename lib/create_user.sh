@@ -57,3 +57,8 @@ remove_user_description() {
   echo "$ cryptohome --action=unmount"
   echo "$ cryptohome --action=remove --user=${email}"
 }
+
+post_create_user() {
+  invalidate_auth_session > /dev/null 2>&1 || true
+  cryptohome_unmount > /dev/null 2>&1 || true
+}
