@@ -9,6 +9,8 @@ readonly SCRIPT_LIB_DIR
 source "$SCRIPT_LIB_DIR/base.sh"
 # shellcheck source=lib/backup.sh
 source "$SCRIPT_LIB_DIR/backup.sh"
+# shellcheck source=lib/restore.sh
+source "$SCRIPT_LIB_DIR/restore.sh"
 
 set -o errexit
 
@@ -59,6 +61,12 @@ EOF
   exit "${1:-0}"
 }
 
+die_with_usage() {
+  echo "$@"
+  echo
+  usage 1
+}
+
 prompt_info() {
   echo "${V_BOLD_GREEN}$*${V_VIDOFF}"
 }
@@ -71,8 +79,12 @@ prompt_for_password() {
   local prompt="Enter Password:"
   if [[ "$ACTION" = "$ACTION_BACKUP" ]]; then
     prompt="The current logged-in user is $USER_EMAIL, please enter the login password to verify your identity, and the password will be used to encrypt the backup file:"
-  elif [[ "$ACTION" = "$ACTION_RESTORE" ]] && [[ "$CREATE_NEW_USER" = "true" ]]; then
-    prompt="Please enter the password for decrypting the backup file and create encrypted directory for the new user:"
+  elif [[ "$ACTION" = "$ACTION_RESTORE" ]]; then
+    if [[ "$CREATE_NEW_USER" = "true" ]]; then
+      prompt="Please enter the password for decrypting the backup file and create encrypted directory for the new user:"
+    else
+      prompt="Please enter the password for decrypting the backup file:"
+    fi
   fi
   while IFS= read -p "$(prompt_info "$prompt")" -r -s -n 1 char; do
     if [[ $char == $'\0' ]]; then
@@ -85,7 +97,8 @@ prompt_for_password() {
 }
 
 prompt_for_email() {
-  local prompt="Please enter the email of current logged-in user, which is the email of the account you want to backup: "
+  local action="$1"
+  local prompt="Please enter the email of current logged-in user, which is the email of the account you want to $action: "
   while true; do
     read -p "$(prompt_info "$prompt")" -r email
     if [[ -z "$email" ]]; then
@@ -131,12 +144,51 @@ verify_params() {
   fi
 }
 
+assert_root_user() {
+  set +o nounset
+  set +o errexit
+  if [[ $EUID -ne 0 ]]; then
+    die_with_usage "Please login as root to run this script"
+  fi
+  set -o errexit
+  set -o nounset
+}
+
+assert_no_sudo_root() {
+  set +o nounset
+  set +o errexit
+  if [[ $EUID -ne 0 ]] || [[ -n "$SUDO_USER" ]]; then
+    die_with_usage "Please login as root to run this script, and no sudo"
+  fi
+  set -o errexit
+  set -o nounset
+}
+
+is_running_in_crosh() {
+  set +o nounset
+  set +o errexit
+  local pid=$$
+  local name=""
+  local found="false"
+  while true; do
+    pid=$(ps -h -o ppid -p "$pid" 2>/dev/null | tr -d ' ')
+    name=$(ps -h -o comm -p "$pid" 2>/dev/null | tr -d ' ')
+    if [[ "$name" = "crosh" ]]; then
+      found="true"
+    fi
+    [[ $pid -eq 1 ]] && break
+  done
+  set -o errexit
+  set -o nounset
+  [[ "$found" = "true" ]]
+}
+
 do_backup() {
   set_log_prefix "backup"
   assert_current_mount_status
   USER_EMAIL=$(get_current_user_email)
   if [[ -z "$USER_EMAIL" ]]; then
-    prompt_for_email
+    prompt_for_email "backup"
   fi
   prompt_for_password
   verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
@@ -146,7 +198,39 @@ do_backup() {
   tar_backup_files "$USER_EMAIL" "$PASSWORD"
 }
 
+do_restore() {
+  set_log_prefix "restore"
+  assert_no_sudo_root
+  if is_running_in_crosh; then
+    die_with_usage "Please do not run the script inside crosh"
+  fi
+  if [[ "$CREATE_NEW_USER" = "true" ]]; then
+    assert_current_unmount_status_for_new_user
+  else
+    assert_current_mount_status
+    USER_EMAIL=$(get_current_user_email)
+    if [[ -z "$USER_EMAIL" ]]; then
+      prompt_for_email "restore"
+    fi
+    assert_email_and_current_user_path "$USER_EMAIL"
+  fi
+  local restore_path=""
+  prompt_for_password
+  if [[ "$CREATE_NEW_USER" = "true" ]]; then
+    create_user "$USER_EMAIL" "$PASSWORD"
+    local path=""
+    path=$(get_mount_path_by_email "$USER_EMAIL")
+    assert_new_user_path_created "$path"
+    restore_path="$path"
+  else
+    restore_path=$(get_current_user_base_path)
+  fi
+
+  restore_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE" "$restore_path"
+}
+
 main() {
+  assert_root_user
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -224,6 +308,8 @@ main() {
   prepare_gpg
   if [[ "$ACTION" = "$ACTION_BACKUP" ]]; then
     do_backup
+  elif [[ "$ACTION" = "$ACTION_RESTORE" ]]; then
+    do_restore
   fi
 }
 

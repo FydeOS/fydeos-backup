@@ -11,66 +11,6 @@ readonly MY_FILES_PATH_NAME
 DOWNLOADS_PATH_NAME="Downloads" # same with "MyFiles/Downloads", do not clean it or backup it
 readonly DOWNLOADS_PATH_NAME
 
-CURRENT_USER_BASE_PATH=""
-CURRENT_USER_CHROME_DATA_DIR=""
-CURRENT_USER_ANDROID_DATA_DIR=""
-
-parse_email_from_preference_file() {
- local file="$1"
- if [[ -f "$file" ]]; then
-   jq -r '.account_info[0].email' "$file" || { error "Failed to parse email from preference file: $file"; echo ""; }
- else
-   error "Unable to find email from preference file: $file"
-   echo ""
- fi
-}
-
-get_current_user_hash_id() {
-  findmnt -T /home/chronos/user -o SOURCE | grep shadow | awk -F/ '{print $6}'
-}
-
-get_current_user_base_path() {
-  if [[ -z "$CURRENT_USER_BASE_PATH" ]]; then
-    local id=""
-    id=$(get_current_user_hash_id)
-    CURRENT_USER_BASE_PATH="/home/.shadow/${id}/mount"
-  fi
-  echo "$CURRENT_USER_BASE_PATH"
-}
-
-get_current_user_chrome_profile_data_path() {
-  if [[ -z "$CURRENT_USER_CHROME_DATA_DIR" ]]; then
-    CURRENT_USER_CHROME_DATA_DIR="$(get_current_user_base_path)/${CHROME_PROFILE_SUBDIR_NAME}"
-  fi
-  echo "$CURRENT_USER_CHROME_DATA_DIR"
-}
-
-get_current_user_android_data_path() {
-  if [[ -z "$CURRENT_USER_ANDROID_DATA_DIR" ]]; then
-    CURRENT_USER_ANDROID_DATA_DIR="$(get_current_user_base_path)/${ANDROID_DATA_SUBDIR_NAME}"
-  fi
-  echo "$CURRENT_USER_ANDROID_DATA_DIR"
-}
-
-# get the email of current logged in user
-get_current_user_email() {
-  local path=""
-  path=$(get_current_user_chrome_profile_data_path)
-  local email=""
-  email=$(parse_email_from_preference_file "$path/${PREFERENCE_JSON_FILE_NAME}")
-  local hash_from_email=""
-  debug "get current user email: $email"
-  hash_from_email=$(get_hash_from_email "$email")
-  local hash_from_findmnt=""
-  hash_from_findmnt=$(get_current_user_hash_id)
-  if [[ ! "$hash_from_findmnt" = "$hash_from_email" ]]; then
-    debug "hash_from_findmnt: $hash_from_findmnt, hash_from_email: $hash_from_email"
-    error "Unable to find the correct email of current logged in user"
-    email=""
-  fi
-  echo "$email"
-}
-
 verify_cryptohome_password() {
   local u="$1"
   local p="$2"
@@ -94,6 +34,14 @@ assert_current_mount_status() {
   fi
   if ! findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
     fatal "No user mounted at /home/chronos/user, cannot backup or restore"
+  fi
+}
+
+assert_current_unmount_status_for_new_user() {
+  local mounted=""
+  mounted=$(cryptohome --action=is_mounted)
+  if [[ "$mounted" = "true" ]] || findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
+    fatal "cryptohome is mounted, please log out any session before creating new user and restore data for new user"
   fi
 }
 
@@ -190,7 +138,7 @@ tar_backup_files() {
   echo "Backup the file to $final"
   local temp_meta_dir=""
   temp_meta_dir=$(mktemp -d "/tmp/fydeos_backup_XXXXXXXX") || fatal "Failed to create temporary directory"
-  local meta_file="backup_meta.json"
+  local meta_file="$BACKUP_METADATA_FILE_NAME"
   local meta_file_path="$temp_meta_dir/$meta_file"
   generate_metadata_for_backup_file "$email" "$datetime" "$meta_file_path"
 
