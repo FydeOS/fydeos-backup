@@ -9,6 +9,8 @@ readonly SCRIPT_LIB_DIR
 source "$SCRIPT_LIB_DIR/base.sh"
 # shellcheck source=lib/backup.sh
 source "$SCRIPT_LIB_DIR/backup.sh"
+# shellcheck source=lib/create_user.sh
+source "$SCRIPT_LIB_DIR/create_user.sh"
 # shellcheck source=lib/restore.sh
 source "$SCRIPT_LIB_DIR/restore.sh"
 
@@ -81,7 +83,7 @@ prompt_for_password() {
     prompt="The current logged-in user is $USER_EMAIL, please enter the login password to verify your identity, and the password will be used to encrypt the backup file:"
   elif [[ "$ACTION" = "$ACTION_RESTORE" ]]; then
     if [[ "$CREATE_NEW_USER" = "true" ]]; then
-      prompt="Please enter the password for decrypting the backup file and create encrypted directory for the new user:"
+      prompt="Please enter the password for decrypting the backup file and create encrypted directory for the new user $USER_EMAIL:"
     else
       prompt="Please enter the password for decrypting the backup file:"
     fi
@@ -220,17 +222,24 @@ do_restore() {
     create_user "$USER_EMAIL" "$PASSWORD"
     local path=""
     path=$(get_mount_path_by_email "$USER_EMAIL")
-    assert_new_user_path_created "$path"
+    assert_new_user_path_created "$USER_EMAIL" "$path"
     restore_path="$path"
   else
     restore_path=$(get_current_user_base_path)
   fi
 
   restore_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE" "$restore_path"
+
+  if [[ "$CREATE_NEW_USER" = "true" ]]; then
+    invalidate_auth_session || true
+    cryptohome_unmount || true
+  fi
 }
 
 main() {
   assert_root_user
+  set +o errexit
+  set +o nounset
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -275,8 +284,10 @@ main() {
               ;;
             -n|--new)
               CREATE_NEW_USER="true"
-              USER_EMAIL="$2"
-              shift
+              if [[ -n "$2" ]]; then
+                USER_EMAIL="$2"
+                shift
+              fi
               shift
               ;;
             --password)
@@ -302,6 +313,8 @@ main() {
         ;;
     esac
   done
+  set -o nounset
+  set -o errexit
   print_params
   verify_params
 

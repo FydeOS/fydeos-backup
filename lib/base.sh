@@ -149,3 +149,27 @@ clean_path() {
   sync
 }
 
+generate_key_for_backup_file() {
+  local u="$1"
+  local p="$2"
+  echo -n "$u:$p" | sha1sum | awk '{print $1}' | cut -c -16
+}
+
+assert_current_mount_status() {
+  local mounted=""
+  mounted=$(cryptohome --action=is_mounted)
+  if [[ "$mounted" != "true" ]]; then
+    fatal "cryptohome is not mounted, cannot backup or restore"
+  fi
+  if ! findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
+    fatal "No user mounted at /home/chronos/user, cannot backup or restore"
+  fi
+}
+
+assert_current_unmount_status_for_new_user() {
+  local mounted=""
+  mounted=$(cryptohome --action=is_mounted)
+  if [[ "$mounted" = "true" ]] || findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
+    fatal "cryptohome is mounted, please log out any session before creating new user and restore data for new user"
+  fi
+}

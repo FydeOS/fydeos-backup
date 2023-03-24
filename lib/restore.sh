@@ -25,10 +25,11 @@ assert_email_and_current_user_path() {
 
 assert_new_user_path_created() {
   local email="$1"
-  local path=""
-  path=$(get_mount_path_by_email "$email")
+  local path="$2"
   if [[ ! -d "$path" ]]; then
-    fatal "The path $path for new user does not exist, you may want to run cryptohome --action=remove --user=${email} to remove the user and try again"
+    error "The path $path for new user does not exist"
+    remove_user_description "$email"
+    exit 1
   fi
 }
 
