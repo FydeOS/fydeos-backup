@@ -41,21 +41,24 @@ cryptohome_unmount() {
   cryptohome --action=unmount
 }
 
+
+remove_user_description() {
+  local email="$1"
+  echo "If you want to remove the user created by this script, please run the commands below:"
+  echo "$ cryptohome --action=unmount"
+  echo "$ cryptohome --action=remove --user=${email}"
+}
+
 create_user() {
   local email="$1"
   local password="$2"
 
+  # shellcheck disable=SC2064
+  trap "remove_user_description $email" SIGINT SIGTERM ERR
   start_auth_session "$email"
   create_persistent_user
   prepare_persistent_vault
   add_auth_factor "$password"
-}
-
-remove_user_description() {
-  local email="$1"
-  echo "You may want to remove the user created by this script, please run the commands below:"
-  echo "$ cryptohome --action=unmount"
-  echo "$ cryptohome --action=remove --user=${email}"
 }
 
 post_create_user() {

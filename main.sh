@@ -208,6 +208,10 @@ do_restore() {
   fi
   if [[ "$CREATE_NEW_USER" = "true" ]]; then
     assert_current_unmount_status_for_new_user
+    local path=""
+    path=$(get_mount_path_by_email "$USER_EMAIL")
+    assert_no_new_user_path_before_create "$USER_EMAIL" "$path"
+    restore_path="$path"
   else
     assert_current_mount_status
     USER_EMAIL=$(get_current_user_email)
@@ -215,16 +219,10 @@ do_restore() {
       prompt_for_email "restore"
     fi
     assert_email_and_current_user_path "$USER_EMAIL"
+    restore_path=$(get_current_user_base_path)
   fi
   local restore_path=""
   prompt_for_password
-  if [[ "$CREATE_NEW_USER" = "true" ]]; then
-    local path=""
-    path=$(get_mount_path_by_email "$USER_EMAIL")
-    restore_path="$path"
-  else
-    restore_path=$(get_current_user_base_path)
-  fi
 
   restore_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE" "$restore_path" "$CREATE_NEW_USER"
 

@@ -23,11 +23,21 @@ assert_email_and_current_user_path() {
   fi
 }
 
-assert_new_user_path_created() {
+assert_no_new_user_path_before_create() {
+  local email="$1"
+  local path="$2"
+  if [[ -d "$path" ]]; then
+    error "Data path for user $email already exists, you may want to back to Chromium, create account and login in with the email, or delete the path and try again"
+    remove_user_description "$email"
+    exit 1
+  fi
+}
+
+assert_user_path_exists() {
   local email="$1"
   local path="$2"
   if [[ ! -d "$path" ]]; then
-    error "The path $path for new user does not exist"
+    error "The path $path for user does not exist"
     remove_user_description "$email"
     exit 1
   fi
@@ -204,10 +214,9 @@ restore_backup_files() {
   assert_backup_metadata "$email"
 
   if [[ "$create_new_user" = "true" ]]; then
-    create_user "$USER_EMAIL" "$PASSWORD"
-    assert_new_user_path_created "$USER_EMAIL" "$restore_path"
+    create_user "$email" "$pass"
   fi
-
+  assert_user_path_exists "$email" "$restore_path"
 
   stop_chronos_processes || { error "Failed to stop chronos processes, abort"; restart_ui; exit 1; }
   set +o errexit # disable exit on error, we need to restart ui anyway
@@ -218,6 +227,6 @@ restore_backup_files() {
   restart_ui
   info "Restore completed."
   if [[ "$create_new_user" = "true" ]]; then
-    info "The cryptohome and data is ready for user $email, you need to go back to Chromium, and login with the email"
+    info "The cryptohome directory and data is ready for user $email, you need to go back to Chromium, and create the account and login with the email"
   fi
 }
