@@ -123,6 +123,11 @@ get_user_image_info() {
   jq -r ".${KEY_USER_IMAGE_INFO}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"
 }
 
+get_user_image_info_path() {
+  local email="$1"
+  jq -r ".${KEY_USER_IMAGE_INFO}.\"${email}\".path" "$LOCAL_STATE_JSON_FILE"
+}
+
 get_user_wallpaper_info() {
   local email="$1"
   jq -r ".${KEY_USER_WALLPAPER_INFO}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"

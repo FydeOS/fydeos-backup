@@ -54,14 +54,28 @@ EOF
   echo "$content" > "${file}"
 }
 
+save_avatar_for_user() {
+  local email="$1"
+  local dir="$2"
+  local path=""
+  path="$(get_user_image_info_path "$email")"
+  debug "get user avatar path $path"
+  if [[ "$path" = "/home/chronos/"* ]] && [[ -f "$path" ]]; then
+    mkdir -p "$dir"
+    cp -f "$path" "$dir"
+  fi
+}
+
 backup_local_state_file() {
   local email="$1"
   local dir="$2"
   local json_file="$dir/local_state.json"
+  local avatar_dir="$dir/avatar"
   save_local_state_for_user "$email" "$json_file"
+  save_avatar_for_user "$email" "$avatar_dir"
 }
 
-tar_with_metadata() {
+tar_with_extra() {
   local key="$1"
   local target="$2"
   local extra_dir="$3"
@@ -116,6 +130,7 @@ tar_backup_files() {
   echo "Backup the file to $final"
   local temp_dir=""
   temp_dir=$(mktemp -d "/tmp/fydeos_backup_XXXXXXXX") || fatal "Failed to create temporary directory"
+  debug "temp dir for extra data: $temp_dir"
   local meta_file="$BACKUP_METADATA_FILE_NAME"
   local meta_file_path="$temp_dir/$meta_file"
   generate_metadata_for_backup_file "$email" "$datetime" "$meta_file_path"
@@ -128,7 +143,7 @@ tar_backup_files() {
   local key=""
   key=$(generate_key_for_backup_file "$email" "$pass")
   debug "password for encryped backup file: $key"
-  tar_with_metadata "$key" "$tmp" "$temp_dir"
+  tar_with_extra "$key" "$tmp" "$temp_dir"
   if [[ ! -f "$tmp" ]]; then
     fatal "Faile to tar backup file"
   fi
@@ -136,6 +151,9 @@ tar_backup_files() {
   mv "${tmp}" "${final}"
 
   chown chronos:chronos "$final"
+
+  clean_path "${temp_dir}"
+  rmdir "${temp_dir}" || true
 
   info "Tar backup files done, find the file $filename in Downloads folder of user $email"
 }
