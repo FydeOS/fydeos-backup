@@ -3,6 +3,8 @@
 # shellcheck source=./lib/base.sh
 source "$SCRIPT_LIB_DIR/base.sh"
 
+SOURCE_JSON_FILE=""
+
 LOCAL_STATE_JSON_FILE="/home/chronos/Local State"
 readonly LOCAL_STATE_JSON_FILE
 
@@ -55,7 +57,7 @@ get_from_known_users() {
 is_last_active_user() {
   local email="$1"
   local last=""
-  last=$(jq -r ".${KEY_LAST_ACTIVE_USER}" "$LOCAL_STATE_JSON_FILE")
+  last=$(jq -r ".${KEY_LAST_ACTIVE_USER}" "$SOURCE_JSON_FILE")
   [[ "$email" = "$last" ]]
 }
 
@@ -63,7 +65,7 @@ is_logged_in_users() {
   local json="$1"
   local email="$2"
   if [[ -z $json ]]; then
-    json=$(cat "$LOCAL_STATE_JSON_FILE")
+    json=$(cat "$SOURCE_JSON_FILE")
   fi
   local result=""
   result=$(echo "$json" | jq -r ".${KEY_LOGGED_IN_USERS} | index(\"${email}\") != null")
@@ -72,32 +74,32 @@ is_logged_in_users() {
 
 get_oauth_token_status() {
   local email="$1"
-  jq -r ".${KEY_OAUTH_TOKEN_STATUS}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"
+  jq -r ".${KEY_OAUTH_TOKEN_STATUS}.\"${email}\"" "$SOURCE_JSON_FILE"
 }
 
 get_user_display_email() {
   local email="$1"
-  jq -r ".${KEY_USER_DISPLAY_EMAIL}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"
+  jq -r ".${KEY_USER_DISPLAY_EMAIL}.\"${email}\"" "$SOURCE_JSON_FILE"
 }
 
 get_user_display_name() {
   local email="$1"
-  jq -r ".${KEY_USER_DISPLAY_NAME}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"
+  jq -r ".${KEY_USER_DISPLAY_NAME}.\"${email}\"" "$SOURCE_JSON_FILE"
 }
 
 get_user_force_online_signin() {
   local email="$1"
-  jq -r ".${KEY_USER_FORCE_ONLINE_SIGNIN}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"
+  jq -r ".${KEY_USER_FORCE_ONLINE_SIGNIN}.\"${email}\"" "$SOURCE_JSON_FILE"
 }
 
 get_user_given_name() {
   local email="$1"
-  jq -r ".${KEY_USER_GIVEN_NAME}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"
+  jq -r ".${KEY_USER_GIVEN_NAME}.\"${email}\"" "$SOURCE_JSON_FILE"
 }
 
 get_from_easy_unlock() {
   local email="$1"
-  jq -r ".${KEY_EASY_UNLOCK}.${KEY_EASY_UNLOCK_USER_PREFS}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"
+  jq -r ".${KEY_EASY_UNLOCK}.${KEY_EASY_UNLOCK_USER_PREFS}.\"${email}\"" "$SOURCE_JSON_FILE"
 }
 
 generate_user_hash() {
@@ -114,23 +116,23 @@ get_from_profile_info_cache() {
   local hash=""
   hash=$(generate_user_hash "$email")
   if [[ -n "$hash" ]]; then
-    jq -r ".${KEY_PROFILE}.${KEY_PROFILE_INFO_CACHE}.\"${hash}\"" "$LOCAL_STATE_JSON_FILE"
+    jq -r ".${KEY_PROFILE}.${KEY_PROFILE_INFO_CACHE}.\"${hash}\"" "$SOURCE_JSON_FILE"
   fi
 }
 
 get_user_image_info() {
   local email="$1"
-  jq -r ".${KEY_USER_IMAGE_INFO}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"
+  jq -r ".${KEY_USER_IMAGE_INFO}.\"${email}\"" "$SOURCE_JSON_FILE"
 }
 
 get_user_image_info_path() {
   local email="$1"
-  jq -r ".${KEY_USER_IMAGE_INFO}.\"${email}\".path" "$LOCAL_STATE_JSON_FILE"
+  jq -r ".${KEY_USER_IMAGE_INFO}.\"${email}\".path" "$SOURCE_JSON_FILE"
 }
 
 get_user_wallpaper_info() {
   local email="$1"
-  jq -r ".${KEY_USER_WALLPAPER_INFO}.\"${email}\"" "$LOCAL_STATE_JSON_FILE"
+  jq -r ".${KEY_USER_WALLPAPER_INFO}.\"${email}\"" "$SOURCE_JSON_FILE"
 }
 
 JSON_TEMPLATE="$(cat <<EOF
@@ -249,10 +251,10 @@ is_empty_content() {
   [[ -z "$content" ]] || [[ "$content" = "null" ]]
 }
 
-
-save_local_state_for_user() {
+read_and_merge_json() {
   local email="$1"
   local target_file="$2"
+  SOURCE_JSON_FILE="$3"
 
   local known_user=""
   local last_active_user="false"
@@ -266,11 +268,11 @@ save_local_state_for_user() {
   local profile_info_cache=""
   local image_info=""
   local wallpaper_info=""
-  known_user=$(get_from_known_users "$(cat "$LOCAL_STATE_JSON_FILE")" "$email")
+  known_user=$(get_from_known_users "$(cat "$SOURCE_JSON_FILE")" "$email")
   if is_last_active_user "$email"; then
     last_active_user="true"
   fi
-  if is_logged_in_users "$(cat "$LOCAL_STATE_JSON_FILE")" "$email"; then
+  if is_logged_in_users "$(cat "$SOURCE_JSON_FILE")" "$email"; then
     logged_in_user="true"
   fi
   oauth_token_status=$(get_oauth_token_status "$email")
@@ -284,7 +286,8 @@ save_local_state_for_user() {
   wallpaper_info=$(get_user_wallpaper_info "$email")
 
   local json=""
-  local json="$JSON_TEMPLATE"
+  json=$(cat "$target_file")
+
   json=$(insert_into_known_users "$json" "$email" "$known_user")
 
   if [[ "$last_active_user" = "true" ]]; then
@@ -332,4 +335,13 @@ save_local_state_for_user() {
   fi
 
   echo "$json" > "$target_file"
+}
+
+save_local_state_for_user() {
+  local email="$1"
+  local target_file="$2"
+  local json="$JSON_TEMPLATE"
+  echo "$json" > "$target_file"
+
+  read_and_merge_json "$email" "$target_file" "$LOCAL_STATE_JSON_FILE"
 }
