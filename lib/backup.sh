@@ -132,5 +132,5 @@ tar_backup_files() {
 
   chown chronos:chronos "$final"
 
-  info "Tar backup files done, find the file $filename in Downloads folder"
+  info "Tar backup files done, find the file $filename in Downloads folder of user $email"
 }

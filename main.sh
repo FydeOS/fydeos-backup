@@ -9,8 +9,8 @@ readonly SCRIPT_LIB_DIR
 source "$SCRIPT_LIB_DIR/base.sh"
 # shellcheck source=lib/backup.sh
 source "$SCRIPT_LIB_DIR/backup.sh"
-# shellcheck source=lib/create_user.sh
-source "$SCRIPT_LIB_DIR/create_user.sh"
+# shellcheck source=lib/cryptohome_action.sh
+source "$SCRIPT_LIB_DIR/cryptohome_action.sh"
 # shellcheck source=lib/restore.sh
 source "$SCRIPT_LIB_DIR/restore.sh"
 
@@ -80,7 +80,7 @@ prompt_for_password() {
   fi
   local prompt="Enter Password:"
   if [[ "$ACTION" = "$ACTION_BACKUP" ]]; then
-    prompt="The current logged-in user is $USER_EMAIL, please enter the login password to verify your identity, and the password will be used to encrypt the backup file:"
+    prompt="The user is $USER_EMAIL, please enter the login password to verify your identity, and the password will be used to encrypt the backup file:"
   elif [[ "$ACTION" = "$ACTION_RESTORE" ]]; then
     if [[ "$CREATE_NEW_USER" = "true" ]]; then
       prompt="Please enter the password for decrypting the backup file and create encrypted directory for the new user $USER_EMAIL:"
@@ -100,7 +100,7 @@ prompt_for_password() {
 
 prompt_for_email() {
   local action="$1"
-  local prompt="Please enter the email of current logged-in user, which is the email of the account you want to $action: "
+  local prompt="Please enter the email of the account you want to $action: "
   while true; do
     read -p "$(prompt_info "$prompt")" -r email
     if [[ -z "$email" ]]; then
@@ -187,17 +187,28 @@ is_running_in_crosh() {
 
 do_backup() {
   set_log_prefix "backup"
-  assert_current_mount_status
   USER_EMAIL=$(get_current_user_email)
   if [[ -z "$USER_EMAIL" ]]; then
     prompt_for_email "backup"
   fi
   prompt_for_password
-  verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
+
+  if ! is_current_login; then
+    if is_cryptohome_mounted; then
+      fatal "Please logout any session and run the script again"
+    fi
+    try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
+  else
+    verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
+  fi
+
+  assert_email_and_current_user_path "$USER_EMAIL"
 
   print_files_to_backup_disk_usage
 
   tar_backup_files "$USER_EMAIL" "$PASSWORD"
+
+  post_cryptohome_action
 }
 
 do_restore() {
@@ -210,25 +221,33 @@ do_restore() {
     assert_current_unmount_status_for_new_user
     local path=""
     path=$(get_mount_path_by_email "$USER_EMAIL")
-    assert_no_new_user_path_before_create "$USER_EMAIL" "$path"
     restore_path="$path"
+    if [[ -d "$restore_path" ]]; then
+      warn "The path $restore_path already exists. The script will try to restore data to this path"
+      CREATE_NEW_USER="false"
+    fi
+    prompt_for_password
   else
-    assert_current_mount_status
     USER_EMAIL=$(get_current_user_email)
     if [[ -z "$USER_EMAIL" ]]; then
       prompt_for_email "restore"
     fi
+    prompt_for_password
+    if ! is_current_login; then
+      if is_cryptohome_mounted; then
+        fatal "Please logout any session and run the script again"
+      fi
+      try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
+    else
+      verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
+    fi
     assert_email_and_current_user_path "$USER_EMAIL"
     restore_path=$(get_current_user_base_path)
   fi
-  local restore_path=""
-  prompt_for_password
 
   restore_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE" "$restore_path" "$CREATE_NEW_USER"
 
-  if [[ "$CREATE_NEW_USER" = "true" ]]; then
-    post_create_user
-  fi
+  post_cryptohome_action
 }
 
 main() {

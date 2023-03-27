@@ -3,6 +3,8 @@
 # shellcheck source=./lib/base.sh
 source "$SCRIPT_LIB_DIR/base.sh"
 
+AUTH_SESSION_ID=""
+
 start_auth_session() {
   local email="$1"
   AUTH_SESSION_ID=$(cryptohome --action=start_auth_session --user="$email" \
@@ -50,8 +52,10 @@ remove_user_description() {
 }
 
 create_user() {
+  AUTH_SESSION_ID=""
   local email="$1"
   local password="$2"
+  info "Creating user ${email}"
 
   # shellcheck disable=SC2064
   trap "remove_user_description $email" SIGINT SIGTERM ERR
@@ -61,7 +65,28 @@ create_user() {
   add_auth_factor "$password"
 }
 
-post_create_user() {
-  invalidate_auth_session > /dev/null 2>&1 || true
-  cryptohome_unmount > /dev/null 2>&1 || true
+authenticate_auth_factor() {
+  local password="$1"
+
+  cryptohome --action=authenticate_auth_factor \
+    --auth_session_id="$AUTH_SESSION_ID" \
+    --key_label="gaia" \
+    --password="$password"
+}
+
+try_to_login_as_user() {
+  AUTH_SESSION_ID=""
+  local email="$1"
+  local password="$2"
+  info "Trying to login user $email"
+  start_auth_session "$email"
+  authenticate_auth_factor "$password"
+  prepare_persistent_vault
+}
+
+post_cryptohome_action() {
+  if [[ -n "$AUTH_SESSION_ID" ]]; then
+    invalidate_auth_session > /dev/null 2>&1 || true
+    cryptohome_unmount > /dev/null 2>&1 || true
+  fi
 }

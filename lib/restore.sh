@@ -23,26 +23,6 @@ assert_email_and_current_user_path() {
   fi
 }
 
-assert_no_new_user_path_before_create() {
-  local email="$1"
-  local path="$2"
-  if [[ -d "$path" ]]; then
-    error "Data path for user $email already exists, you may want to back to Chromium, create account and login in with the email, or delete the path and try again"
-    remove_user_description "$email"
-    exit 1
-  fi
-}
-
-assert_user_path_exists() {
-  local email="$1"
-  local path="$2"
-  if [[ ! -d "$path" ]]; then
-    error "The path $path for user does not exist"
-    remove_user_description "$email"
-    exit 1
-  fi
-}
-
 clean_intermediate_files() {
   debug "Clean intermediate files"
   rm -fr "${BACKUP_FILE_CHROME_PROFILE_DIR_NAME}"
@@ -216,7 +196,11 @@ restore_backup_files() {
   if [[ "$create_new_user" = "true" ]]; then
     create_user "$email" "$pass"
   fi
-  assert_user_path_exists "$email" "$restore_path"
+  if [[ ! -d "$restore_path" ]]; then
+    error "The path $restore_path for user $email does not exist"
+    remove_user_description "$email"
+    exit 1
+  fi
 
   stop_chronos_processes || { error "Failed to stop chronos processes, abort"; restart_ui; exit 1; }
   set +o errexit # disable exit on error, we need to restart ui anyway

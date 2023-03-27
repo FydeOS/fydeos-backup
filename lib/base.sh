@@ -155,22 +155,26 @@ generate_key_for_backup_file() {
   echo -n "$u:$p" | sha1sum | awk '{print $1}' | cut -c -16
 }
 
-assert_current_mount_status() {
+is_cryptohome_mounted() {
   local mounted=""
   mounted=$(cryptohome --action=is_mounted)
-  local extra_msg="you may want to create a new user and restore data for the user, use -n <email> to specify the email"
-  if [[ "$mounted" != "true" ]]; then
-    fatal "cryptohome is not mounted, cannot backup or restore, $extra_msg"
+  [[ "$mounted" = "true" ]]
+}
+
+is_current_login() {
+  if ! is_cryptohome_mounted; then
+    error "cryptohome is not mounted, cannot backup or restore"
+    return 1
   fi
   if ! findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
-    fatal "No user mounted at /home/chronos/user, cannot backup or restore, $extra_msg"
+    error "No user mounted at /home/chronos/user, cannot backup or restore"
+    return 2
   fi
+  return 0
 }
 
 assert_current_unmount_status_for_new_user() {
-  local mounted=""
-  mounted=$(cryptohome --action=is_mounted)
-  if [[ "$mounted" = "true" ]] || findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
-    fatal "cryptohome is mounted, please log out any session before creating new user and restore data for new user"
+  if is_cryptohome_mounted || findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
+    fatal "cryptohome is mounted, try to log out any session, or run \`cryptohome --unmount\`, or just reboot and run this script again"
   fi
 }
