@@ -234,14 +234,16 @@ do_restore() {
       fatal "Please logout any session or just reboot and run the script again"
     fi
     prompt_for_password
-    try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
-    assert_email_and_current_user_path "$USER_EMAIL"
+    if [[ ! "$CREATE_NEW_USER" = "true" ]]; then
+      try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
+      assert_email_and_current_user_path "$USER_EMAIL"
+    fi
   else
     assert_email_and_current_user_path "$USER_EMAIL"
     prompt_for_password
     verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
+    restore_path=$(get_current_user_base_path)
   fi
-  restore_path=$(get_current_user_base_path)
 
   restore_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE" "$restore_path" "$CREATE_NEW_USER"
 

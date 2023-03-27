@@ -134,7 +134,7 @@ is_current_login() {
 
 # get the email of current logged in user
 get_current_user_email() {
-  if ! is_current_login; then
+  if ! is_current_login 2> /dev/null; then
     echo ""
     return
   fi

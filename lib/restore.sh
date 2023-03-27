@@ -184,6 +184,7 @@ restore_backup_files() {
 
   if [[ "$create_new_user" = "true" ]]; then
     create_user "$email" "$pass"
+    assert_email_and_current_user_path "$email"
   fi
   if [[ ! -d "$restore_path" ]]; then
     error "The path $restore_path for user $email does not exist"
