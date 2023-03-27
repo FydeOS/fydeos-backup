@@ -17,6 +17,13 @@ ANDROID_DATA_SUBDIR_NAME="root/android-data"
 # shellcheck disable=SC2034
 readonly ANDROID_DATA_SUBDIR_NAME
 
+USER_AVATAR_SUBDIR_NAME="avatar"
+# shellcheck disable=SC2034
+readonly USER_AVATAR_SUBDIR_NAME
+USER_LOCAL_STATE_JSON_FILE_NAME="local_state.json"
+# shellcheck disable=SC2034
+readonly USER_LOCAL_STATE_JSON_FILE_NAME
+
 INTERMEDIATE_BACKUP_RESTORE_FILE_PATH="/mnt/stateful_partition/encrypted/chronos/.fydeos_backup"
 # shellcheck disable=SC2034
 readonly INTERMEDIATE_BACKUP_RESTORE_FILE_PATH

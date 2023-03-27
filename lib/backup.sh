@@ -69,8 +69,8 @@ save_avatar_for_user() {
 backup_local_state_file() {
   local email="$1"
   local dir="$2"
-  local json_file="$dir/local_state.json"
-  local avatar_dir="$dir/avatar"
+  local json_file="$dir/$USER_LOCAL_STATE_JSON_FILE_NAME"
+  local avatar_dir="$dir/$USER_AVATAR_DIR_NAME"
   save_local_state_for_user "$email" "$json_file"
   save_avatar_for_user "$email" "$avatar_dir"
 }
