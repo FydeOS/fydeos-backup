@@ -114,8 +114,30 @@ get_current_user_android_data_path() {
   echo "$CURRENT_USER_ANDROID_DATA_DIR"
 }
 
+is_cryptohome_mounted() {
+  local mounted=""
+  mounted=$(cryptohome --action=is_mounted)
+  [[ "$mounted" = "true" ]]
+}
+
+is_current_login() {
+  if ! is_cryptohome_mounted; then
+    warn "cryptohome is not mounted"
+    return 1
+  fi
+  if ! findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
+    warn "No user mounted at /home/chronos/user"
+    return 2
+  fi
+  return 0
+}
+
 # get the email of current logged in user
 get_current_user_email() {
+  if ! is_current_login; then
+    echo ""
+    return
+  fi
   local path=""
   path=$(get_current_user_chrome_profile_data_path)
   local email=""
@@ -129,6 +151,9 @@ get_current_user_email() {
     debug "hash_from_findmnt: $hash_from_findmnt, hash_from_email: $hash_from_email"
     error "Unable to find the correct email of current logged in user"
     email=""
+  fi
+  if [[ -n "$email" ]]; then
+    info "Get current user email: $email"
   fi
   echo "$email"
 }
@@ -155,26 +180,8 @@ generate_key_for_backup_file() {
   echo -n "$u:$p" | sha1sum | awk '{print $1}' | cut -c -16
 }
 
-is_cryptohome_mounted() {
-  local mounted=""
-  mounted=$(cryptohome --action=is_mounted)
-  [[ "$mounted" = "true" ]]
-}
-
-is_current_login() {
-  if ! is_cryptohome_mounted; then
-    error "cryptohome is not mounted, cannot backup or restore"
-    return 1
-  fi
-  if ! findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
-    error "No user mounted at /home/chronos/user, cannot backup or restore"
-    return 2
-  fi
-  return 0
-}
-
-assert_current_unmount_status_for_new_user() {
-  if is_cryptohome_mounted || findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
-    fatal "cryptohome is mounted, try to log out any session, or run \`cryptohome --unmount\`, or just reboot and run this script again"
+assert_no_mount_and_not_login() {
+  if is_cryptohome_mounted && ! findmnt "/home/chronos/user" -o SOURCE | grep -q shadow; then
+    fatal "cryptohome is mounted, and no user is logged in, you may in a guest session,  try to log out any session, or just reboot and run this script again"
   fi
 }

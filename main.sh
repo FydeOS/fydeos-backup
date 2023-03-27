@@ -82,7 +82,7 @@ prompt_for_password() {
   if [[ "$ACTION" = "$ACTION_BACKUP" ]]; then
     prompt="The user is $USER_EMAIL, please enter the login password to verify your identity, and the password will be used to encrypt the backup file:"
   elif [[ "$ACTION" = "$ACTION_RESTORE" ]]; then
-    prompt="Please enter the password for decrypting the backup file and create encrypted directory for the user $USER_EMAIL:"
+    prompt="Please enter the password for decrypting the backup file and create/verify encrypted directory for the user $USER_EMAIL:"
   fi
   while IFS= read -p "$(prompt_info "$prompt")" -r -s -n 1 char; do
     if [[ $char == $'\0' ]]; then
@@ -96,7 +96,7 @@ prompt_for_password() {
 
 prompt_for_email() {
   local action="$1"
-  local prompt="Please enter the email of the account you want to $action: "
+  local prompt="Please enter the email of the account you want to $action. If you are already logged in, please enter the email you are currently logged in with: "
   while true; do
     read -p "$(prompt_info "$prompt")" -r email
     if [[ -z "$email" ]]; then
@@ -327,6 +327,8 @@ main() {
   verify_params
 
   prepare_gpg
+
+  assert_no_mount_and_not_login
   if [[ "$ACTION" = "$ACTION_BACKUP" ]]; then
     do_backup
   elif [[ "$ACTION" = "$ACTION_RESTORE" ]]; then
