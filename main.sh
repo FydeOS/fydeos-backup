@@ -7,6 +7,8 @@ readonly SCRIPT_LIB_DIR
 
 # shellcheck source=lib/base.sh
 source "$SCRIPT_LIB_DIR/base.sh"
+# shellcheck source=lib/json.sh
+source "$SCRIPT_LIB_DIR/json.sh"
 # shellcheck source=lib/backup.sh
 source "$SCRIPT_LIB_DIR/backup.sh"
 # shellcheck source=lib/cryptohome_action.sh

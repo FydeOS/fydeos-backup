@@ -54,27 +54,30 @@ EOF
   echo "$content" > "${file}"
 }
 
+backup_local_state_file() {
+  local email="$1"
+  local dir="$2"
+  local json_file="$dir/local_state.json"
+  save_local_state_for_user "$email" "$json_file"
+}
+
 tar_with_metadata() {
   local key="$1"
   local target="$2"
-  local meta_file_path="$3"
-  local temp_meta_dir=""
-  local meta_file=""
+  local extra_dir="$3"
   local base_dir=""
   base_dir=$(get_current_user_base_path)
   if [[ -z "$base_dir" ]] || [[ ! -d "$base_dir" ]]; then
     fatal "Unable to get current user base path"
   fi
   echo "Tar backup files ${base_dir}/${CHROME_PROFILE_SUBDIR_NAME} and ${base_dir}/${ANDROID_DATA_SUBDIR_NAME}"
-  temp_meta_dir=$(dirname "$meta_file_path")
-  meta_file=$(basename "$meta_file_path")
 
   set +o pipefail
   if [[ "$WITH_MY_FILES" = "false" ]]; then
     tar --preserve-permissions \
       -czvf - \
-      -C "${temp_meta_dir}" \
-      "$meta_file" \
+      -C "${extra_dir}" \
+      . \
       -C "${base_dir}" \
       --exclude "${CHROME_PROFILE_SUBDIR_NAME}/${MY_FILES_PATH_NAME}" \
       --exclude "${CHROME_PROFILE_SUBDIR_NAME}/${DOWNLOADS_PATH_NAME}" \
@@ -85,8 +88,8 @@ tar_with_metadata() {
     #always exclude DOWNLOADS_PATH_NAME(Downloads) folder, even if myfiles is enabled, since downloads folder are the same with MyFiles/Downloads
     tar --preserve-permissions \
       -czvf - \
-      -C "${temp_meta_dir}" \
-      "$meta_file" \
+      -C "${extra_dir}" \
+      . \
       -C "${base_dir}" \
       --exclude "${CHROME_PROFILE_SUBDIR_NAME}/${DOWNLOADS_PATH_NAME}" \
       "${CHROME_PROFILE_SUBDIR_NAME}" \
@@ -111,19 +114,21 @@ tar_backup_files() {
   local tmp="${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}/${filename}"
   mkdir -p "${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}"
   echo "Backup the file to $final"
-  local temp_meta_dir=""
-  temp_meta_dir=$(mktemp -d "/tmp/fydeos_backup_XXXXXXXX") || fatal "Failed to create temporary directory"
+  local temp_dir=""
+  temp_dir=$(mktemp -d "/tmp/fydeos_backup_XXXXXXXX") || fatal "Failed to create temporary directory"
   local meta_file="$BACKUP_METADATA_FILE_NAME"
-  local meta_file_path="$temp_meta_dir/$meta_file"
+  local meta_file_path="$temp_dir/$meta_file"
   generate_metadata_for_backup_file "$email" "$datetime" "$meta_file_path"
 
+  backup_local_state_file "$email" "$temp_dir"
+
   # shellcheck disable=SC2064
-  trap "rm -f $tmp; rm -f $meta_file_path; rmdir $temp_meta_dir" SIGINT SIGTERM
+  trap "rm -f $tmp; clean_path $temp_dir" SIGINT SIGTERM
   # tar might return non-zero exit code due to files changes or some other reasons
   local key=""
   key=$(generate_key_for_backup_file "$email" "$pass")
   debug "password for encryped backup file: $key"
-  tar_with_metadata "$key" "$tmp" "$meta_file_path"
+  tar_with_metadata "$key" "$tmp" "$temp_dir"
   if [[ ! -f "$tmp" ]]; then
     fatal "Faile to tar backup file"
   fi

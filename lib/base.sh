@@ -143,7 +143,6 @@ get_current_user_email() {
   local email=""
   email=$(parse_email_from_preference_file "$path/${PREFERENCE_JSON_FILE_NAME}")
   local hash_from_email=""
-  debug "get current user email: $email"
   hash_from_email=$(get_hash_from_email "$email")
   local hash_from_findmnt=""
   hash_from_findmnt=$(get_current_user_hash_id)
