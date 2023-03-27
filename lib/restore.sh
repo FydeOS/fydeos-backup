@@ -227,6 +227,7 @@ restore_backup_files() {
   restart_ui
   info "Restore completed."
   if [[ "$create_new_user" = "true" ]]; then
+    set_oobe_complete
     info "The cryptohome directory and data is ready for user $email, you need to go back to Chromium, and create the account and login with the email"
   fi
 }

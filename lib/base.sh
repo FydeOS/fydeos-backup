@@ -203,3 +203,6 @@ assert_email_and_current_user_path() {
   fi
 }
 
+set_oobe_complete_mark() {
+  touch /home/chronos/.oobe_complete
+}

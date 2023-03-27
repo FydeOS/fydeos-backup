@@ -51,6 +51,9 @@ readonly KEY_USER_IMAGE_INFO
 KEY_USER_WALLPAPER_INFO="user_wallpaper_info"
 readonly KEY_USER_WALLPAPER_INFO
 
+KEY_OOBE_COMPLETE="OobeComplete"
+readonly KEY_OOBE_COMPLETE
+
 get_from_known_users() {
   local json="$1"
   local email="$2"
@@ -347,4 +350,11 @@ save_local_state_for_user() {
   echo "$json" > "$target_file"
 
   read_and_merge_json "$email" "$target_file" "$LOCAL_STATE_JSON_FILE"
+}
+
+set_oobe_complete() {
+  local json="$LOCAL_STATE_JSON_FILE"
+  echo "$json" | jq ".${KEY_OOBE_COMPLETE} = true" > "$LOCAL_STATE_JSON_FILE"
+
+  set_oobe_complete_mark
 }
