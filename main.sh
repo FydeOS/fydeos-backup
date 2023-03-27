@@ -82,11 +82,7 @@ prompt_for_password() {
   if [[ "$ACTION" = "$ACTION_BACKUP" ]]; then
     prompt="The user is $USER_EMAIL, please enter the login password to verify your identity, and the password will be used to encrypt the backup file:"
   elif [[ "$ACTION" = "$ACTION_RESTORE" ]]; then
-    if [[ "$CREATE_NEW_USER" = "true" ]]; then
-      prompt="Please enter the password for decrypting the backup file and create encrypted directory for the new user $USER_EMAIL:"
-    else
-      prompt="Please enter the password for decrypting the backup file:"
-    fi
+    prompt="Please enter the password for decrypting the backup file and create encrypted directory for the user $USER_EMAIL:"
   fi
   while IFS= read -p "$(prompt_info "$prompt")" -r -s -n 1 char; do
     if [[ $char == $'\0' ]]; then
@@ -218,7 +214,6 @@ do_restore() {
     die_with_usage "Please do not run the script inside crosh"
   fi
   if [[ "$CREATE_NEW_USER" = "true" ]]; then
-    assert_current_unmount_status_for_new_user
     local path=""
     path=$(get_mount_path_by_email "$USER_EMAIL")
     restore_path="$path"
@@ -226,24 +221,23 @@ do_restore() {
       warn "The path $restore_path already exists. The script will try to restore data to this path"
       CREATE_NEW_USER="false"
     fi
-    prompt_for_password
   else
     USER_EMAIL=$(get_current_user_email)
     if [[ -z "$USER_EMAIL" ]]; then
       prompt_for_email "restore"
     fi
-    prompt_for_password
-    if ! is_current_login; then
-      if is_cryptohome_mounted; then
-        fatal "Please logout any session and run the script again"
-      fi
-      try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
-    else
-      verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
-    fi
-    assert_email_and_current_user_path "$USER_EMAIL"
-    restore_path=$(get_current_user_base_path)
   fi
+  prompt_for_password
+  if ! is_current_login; then
+    if is_cryptohome_mounted; then
+      fatal "Please logout any session or just reboot and run the script again"
+    fi
+    try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
+  else
+    verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
+  fi
+  assert_email_and_current_user_path "$USER_EMAIL"
+  restore_path=$(get_current_user_base_path)
 
   restore_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE" "$restore_path" "$CREATE_NEW_USER"
 
