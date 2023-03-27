@@ -187,18 +187,20 @@ do_backup() {
   if [[ -z "$USER_EMAIL" ]]; then
     prompt_for_email "backup"
   fi
-  prompt_for_password
 
   if ! is_current_login; then
     if is_cryptohome_mounted; then
       fatal "Please logout any session and run the script again"
     fi
+    prompt_for_password
     try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
+    assert_email_and_current_user_path "$USER_EMAIL"
   else
+    assert_email_and_current_user_path "$USER_EMAIL"
+    prompt_for_password
     verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
   fi
 
-  assert_email_and_current_user_path "$USER_EMAIL"
 
   print_files_to_backup_disk_usage
 
@@ -227,16 +229,18 @@ do_restore() {
       prompt_for_email "restore"
     fi
   fi
-  prompt_for_password
   if ! is_current_login; then
     if is_cryptohome_mounted; then
       fatal "Please logout any session or just reboot and run the script again"
     fi
+    prompt_for_password
     try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
+    assert_email_and_current_user_path "$USER_EMAIL"
   else
+    assert_email_and_current_user_path "$USER_EMAIL"
+    prompt_for_password
     verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
   fi
-  assert_email_and_current_user_path "$USER_EMAIL"
   restore_path=$(get_current_user_base_path)
 
   restore_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE" "$restore_path" "$CREATE_NEW_USER"

@@ -12,17 +12,6 @@ readonly DISABLE_CHROME_RESTART_FILE
 
 RESTORE_DATA_BASE_PATH=""
 
-assert_email_and_current_user_path() {
-  local email="$1"
-  local current_user_path=""
-  local path_by_email=""
-  current_user_path="$(get_current_user_base_path)"
-  path_by_email=$(get_mount_path_by_email "$email")
-  if [[ ! "$current_user_path" = "$path_by_email" ]]; then
-    fatal "The email $email is not the current logged-in user"
-  fi
-}
-
 clean_intermediate_files() {
   debug "Clean intermediate files"
   rm -fr "${BACKUP_FILE_CHROME_PROFILE_DIR_NAME}"
