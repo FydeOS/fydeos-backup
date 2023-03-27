@@ -195,6 +195,7 @@ do_backup() {
       fatal "Please logout any session and run the script again"
     fi
     prompt_for_password
+    trap "post_cryptohome_action" SIGINT SIGTERM ERR
     try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
     assert_email_and_current_user_path "$USER_EMAIL"
   else
@@ -237,6 +238,7 @@ do_restore() {
     fi
     prompt_for_password
     if [[ ! "$CREATE_NEW_USER" = "true" ]]; then
+      trap "post_cryptohome_action" SIGINT SIGTERM ERR
       try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
       assert_email_and_current_user_path "$USER_EMAIL"
     fi

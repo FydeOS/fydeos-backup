@@ -51,14 +51,20 @@ remove_user_description() {
   echo "$ cryptohome --action=remove --user=${email}"
 }
 
+post_cryptohome_action() {
+  debug "AUTH_SESSION_ID: $AUTH_SESSION_ID"
+  if [[ -n "$AUTH_SESSION_ID" ]]; then
+    invalidate_auth_session > /dev/null 2>&1 || true
+    cryptohome_unmount > /dev/null 2>&1 || true
+  fi
+}
+
 create_user() {
   AUTH_SESSION_ID=""
   local email="$1"
   local password="$2"
   info "Creating user ${email}"
 
-  # shellcheck disable=SC2064
-  trap "remove_user_description $email" SIGINT SIGTERM ERR
   start_auth_session "$email"
   create_persistent_user
   prepare_persistent_vault
@@ -84,9 +90,3 @@ try_to_login_as_user() {
   prepare_persistent_vault
 }
 
-post_cryptohome_action() {
-  if [[ -n "$AUTH_SESSION_ID" ]]; then
-    invalidate_auth_session > /dev/null 2>&1 || true
-    cryptohome_unmount > /dev/null 2>&1 || true
-  fi
-}

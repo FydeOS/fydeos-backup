@@ -2,11 +2,18 @@
 
 # shellcheck source=./lib/base.sh
 source "$SCRIPT_LIB_DIR/base.sh"
+# shellcheck source=./lib/base.sh
+source "$SCRIPT_LIB_DIR/json.sh"
 
 BACKUP_FILE_CHROME_PROFILE_DIR_NAME="${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}/${CHROME_PROFILE_SUBDIR_NAME}"
 readonly BACKUP_METADATA_FILE_NAME
 BACKUP_FILE_ANDROID_DATA_DIR_NAME="${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}/${ANDROID_DATA_SUBDIR_NAME}"
 readonly BACKUP_FILE_ANDROID_DATA_DIR_NAME
+BACKUP_FILE_LOCAL_STATE_JSON_FILE="${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}/${USER_LOCAL_STATE_JSON_FILE_NAME}"
+readonly BACKUP_FILE_LOCAL_STATE_JSON_FILE
+BACKUP_FILE_USER_AVATAR_DIR_NAME="${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}/${USER_AVATAR_SUBDIR_NAME}"
+readonly BACKUP_FILE_USER_AVATAR_DIR_NAME
+
 DISABLE_CHROME_RESTART_FILE="/run/disable_chrome_restart"
 readonly DISABLE_CHROME_RESTART_FILE
 
@@ -163,6 +170,23 @@ restore_android_data() {
   sync
 }
 
+restore_extra_data() {
+  # local state and user avatar
+  local email="$1"
+  # email, target, source
+  read_and_merge_json "$email" "${LOCAL_STATE_JSON_FILE}" "${BACKUP_FILE_LOCAL_STATE_JSON_FILE}" 
+  local avatar_path=""
+  avatar_path=$(get_user_image_info_path "$email")
+  if [[ "$avatar_path" = "/home/chronos/"* ]]; then
+    local name=""
+    name=$(basename "$avatar_path")
+    if [[ -f "$BACKUP_FILE_USER_AVATAR_DIR_NAME/$name" ]]; then
+      debug "cp avatar image file $BACKUP_FILE_USER_AVATAR_DIR_NAME/$name to $avatar_path"
+      cp -f "$BACKUP_FILE_USER_AVATAR_DIR_NAME/$name" "$avatar_path"
+    fi
+  fi
+}
+
 restore_backup_files() {
   local email="$1"
   local pass="$2"
@@ -183,6 +207,7 @@ restore_backup_files() {
   assert_backup_metadata "$email"
 
   if [[ "$create_new_user" = "true" ]]; then
+    trap "post_cryptohome_action" SIGINT SIGTERM ERR
     create_user "$email" "$pass"
     assert_email_and_current_user_path "$email"
   fi
@@ -196,6 +221,7 @@ restore_backup_files() {
   set +o errexit # disable exit on error, we need to restart ui anyway
   restore_chrome_profile
   restore_android_data
+  restore_extra_data "$email"
   set -o errexit
 
   restart_ui

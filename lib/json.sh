@@ -3,6 +3,9 @@
 # shellcheck source=./lib/base.sh
 source "$SCRIPT_LIB_DIR/base.sh"
 
+[[ "${_JSON_SCRIPT_SOURCE:-""}" == "yes" ]] && return 0
+_JSON_SCRIPT_SOURCE=yes
+
 SOURCE_JSON_FILE=""
 
 LOCAL_STATE_JSON_FILE="/home/chronos/Local State"
