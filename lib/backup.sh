@@ -114,13 +114,20 @@ tar_with_extra() {
   set -o pipefail
 }
 
+email_to_filename_with_underscore() {
+  local email="$1"
+  echo "${email//[^[:alnum:]]/_}"
+}
+
 tar_backup_files() {
   local email="$1"
   local pass="$2"
   local filename=""
   local datetime=""
   datetime="$(date +%Y%m%d_%H%M%S)"
-  filename="fydeos_backup_${datetime}.tar.gz.gpg"
+  local email_in_filename=""
+  email_in_filename=$(email_to_filename_with_underscore "$email")
+  filename="fydeos_backup_${email_in_filename}_${datetime}.tar.gz.gpg"
 
   local dst="/home/chronos/user/Downloads"
   local final="$dst/${filename}"
