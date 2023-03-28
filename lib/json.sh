@@ -171,6 +171,8 @@ insert_into_known_users() {
   find=$(get_from_known_users "$json" "$email")
   if is_empty_content "$find"; then
     echo "$json" | jq ".${KEY_KNOWN_USERS} |= .+ [$content]"
+  else
+    echo "$json"
   fi
 }
 
@@ -185,6 +187,8 @@ append_logged_in_users() {
   local email="$2"
   if ! is_logged_in_users "$json" "$email"; then
     echo "$json" | jq ".${KEY_LOGGED_IN_USERS} |= .+ [\"${email}\"]"
+  else
+    echo "$json"
   fi
 }
 
@@ -217,6 +221,8 @@ insert_into_user_force_online_signin() {
     echo "$json" | jq ".${KEY_USER_FORCE_ONLINE_SIGNIN}.\"${email}\" = true"
   elif [[ "$value" = "false" ]]; then
     echo "$json" | jq ".${KEY_USER_FORCE_ONLINE_SIGNIN}.\"${email}\" = false"
+  else
+    echo "$json"
   fi
 }
 
@@ -376,6 +382,6 @@ set_force_online_if_managed() {
   if [[ "$is_enterprise_managed" = "true" ]]; then
     debug "set force online signin for user $email"
     json=$(insert_into_user_force_online_signin "$json" "$email" "true")
+    echo "$json" > "$LOCAL_STATE_JSON_FILE"
   fi
-  echo "$json" > "$LOCAL_STATE_JSON_FILE"
 }
