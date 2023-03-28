@@ -224,10 +224,11 @@ restore_backup_files() {
   restore_extra_data "$email"
   set -o errexit
 
-  restart_ui
-  info "Restore completed."
   if [[ "$create_new_user" = "true" ]]; then
     set_oobe_complete
-    info "The cryptohome directory and data is ready for user $email, you need to go back to Chromium, and create the account and login with the email"
+    set_force_online_if_managed "$email"
+    info "The cryptohome directory and data is ready for user $email"
   fi
+  info "Restore completed."
+  restart_ui
 }

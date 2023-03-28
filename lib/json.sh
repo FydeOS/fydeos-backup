@@ -54,6 +54,9 @@ readonly KEY_USER_WALLPAPER_INFO
 KEY_OOBE_COMPLETE="OobeComplete"
 readonly KEY_OOBE_COMPLETE
 
+KEY_IS_ENTERPRISE_MANAGED="is_enterprise_managed"
+readonly KEY_IS_ENTERPRISE_MANAGED
+
 get_from_known_users() {
   local json="$1"
   local email="$2"
@@ -358,4 +361,21 @@ set_oobe_complete() {
   echo "$json" | jq ".${KEY_OOBE_COMPLETE} = true" > "$LOCAL_STATE_JSON_FILE"
 
   set_oobe_complete_mark
+}
+
+set_force_online_if_managed() {
+  local email="$1"
+  local json=""
+  json="$(cat "$LOCAL_STATE_JSON_FILE")"
+  local user=""
+  user=$(get_from_known_users "$json" "$email")
+  local is_enterprise_managed="false"
+  if [[ -n "$user" ]]; then
+    is_enterprise_managed=$(echo "$user" | jq -r ".${KEY_IS_ENTERPRISE_MANAGED}")
+  fi
+  if [[ "$is_enterprise_managed" = "true" ]]; then
+    debug "set force online signin for user $email"
+    json=$(insert_into_user_force_online_signin "$json" "$email" "true")
+  fi
+  echo "$json" > "$LOCAL_STATE_JSON_FILE"
 }
