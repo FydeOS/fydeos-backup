@@ -48,6 +48,7 @@ Commands:
 
 Options for backup:
   --with-myfiles          Include 'My Files' in the backup
+  --email                 Specify the email of the user to be backed up
   --password <pass>       Specify the password to verify user identity and encrypt the backup file
                           Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
   -d, --debug             Enable debug mode
@@ -55,7 +56,8 @@ Options for backup:
 Options for restore:
   -f, --file <file>       Specify the backup file to restore from
   --restore-mode <mode>   Specify the restore mode: ${RESTORE_MODE_MERGE} or ${RESTORE_MODE_REPLACE} (default: ${DEFAULT_RESTORE_MODE})
-  -n, --new <email>       Create a new user with a given email and restore data for that user
+  -n, --new               Indicate that the user to be restored is a new user
+  --email                 Specify the email of the user to restore data, if -n/--new is specified, the script will create new user with the given email
   --password <pass>       Specify a password for new user's encrypted directory and decrypting backup file
                           Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
   -d, --debug             Enable debug mode
