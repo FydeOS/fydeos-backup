@@ -353,7 +353,8 @@ save_local_state_for_user() {
 }
 
 set_oobe_complete() {
-  local json="$LOCAL_STATE_JSON_FILE"
+  local json=""
+  json="$(cat "$LOCAL_STATE_JSON_FILE")"
   echo "$json" | jq ".${KEY_OOBE_COMPLETE} = true" > "$LOCAL_STATE_JSON_FILE"
 
   set_oobe_complete_mark
