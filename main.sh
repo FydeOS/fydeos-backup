@@ -183,9 +183,20 @@ is_running_in_crosh() {
   [[ "$found" = "true" ]]
 }
 
+set_user_email_from_user_data() {
+  local current_email=""
+  current_email=$(get_current_user_email)
+  if [[ -n "$current_email" ]] && [[ -n "$USER_EMAIL" ]] && [[ ! "$current_email" = "$USER_EMAIL" ]]; then
+    fatal "The email of current user is different from the one specified in the command line arguments"
+  fi
+  if [[ -z "$USER_EMAIL" ]] && [[ -n "$current_email" ]]; then
+    USER_EMAIL="$current_email"
+  fi
+}
+
 do_backup() {
   set_log_prefix "backup"
-  USER_EMAIL=$(get_current_user_email)
+  set_user_email_from_user_data
   if [[ -z "$USER_EMAIL" ]]; then
     prompt_for_email "backup"
   fi
@@ -218,6 +229,7 @@ do_restore() {
   if is_running_in_crosh; then
     die_with_usage "Please do not run the script inside crosh"
   fi
+  local restore_path=""
   if [[ "$CREATE_NEW_USER" = "true" ]]; then
     local path=""
     path=$(get_mount_path_by_email "$USER_EMAIL")
@@ -227,7 +239,7 @@ do_restore() {
       CREATE_NEW_USER="false"
     fi
   else
-    USER_EMAIL=$(get_current_user_email)
+    set_user_email_from_user_data
     if [[ -z "$USER_EMAIL" ]]; then
       prompt_for_email "restore"
     fi
@@ -241,6 +253,7 @@ do_restore() {
       trap "post_cryptohome_action" SIGINT SIGTERM ERR
       try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
       assert_email_and_current_user_path "$USER_EMAIL"
+      restore_path=$(get_current_user_base_path)
     fi
   else
     assert_email_and_current_user_path "$USER_EMAIL"
@@ -275,6 +288,11 @@ main() {
               shift
               shift
               ;;
+            --email)
+              USER_EMAIL="$2"
+              shift
+              shift
+              ;;
             -d|--debug)
               LOG_LEVEL="debug"
               shift
@@ -300,12 +318,13 @@ main() {
               shift
               shift
               ;;
+            --email)
+              USER_EMAIL="$2"
+              shift
+              shift
+              ;;
             -n|--new)
               CREATE_NEW_USER="true"
-              if [[ -n "$2" ]]; then
-                USER_EMAIL="$2"
-                shift
-              fi
               shift
               ;;
             --password)
