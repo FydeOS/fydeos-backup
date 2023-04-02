@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-SCRIPT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+SCRIPT_ROOT_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" >/dev/null 2>&1 && pwd)"
 readonly SCRIPT_ROOT_DIR
 SCRIPT_LIB_DIR="$SCRIPT_ROOT_DIR/lib"
 readonly SCRIPT_LIB_DIR
+
+LIST_BACKUP_FILE_LIST_BIN="$SCRIPT_ROOT_DIR/utils/list.sh"
 
 # shellcheck source=lib/base.sh
 source "$SCRIPT_LIB_DIR/base.sh"
@@ -45,6 +47,7 @@ Usage: $0 [backup|restore] [OPTIONS]
 Commands:
   backup                  Perform a backup of the data
   restore                 Restore the data from a backup file
+  list                    List the backup files in the root directory of the the removable disks
 
 Options for backup:
   --with-myfiles          Include 'My Files' in the backup
@@ -343,6 +346,10 @@ main() {
               ;;
           esac
         done
+        ;;
+      list)
+        $LIST_BACKUP_FILE_LIST_BIN
+        exit 0
         ;;
       -h|--help)
         usage
