@@ -15,10 +15,10 @@ V_BOLD_GREEN=$'\e[1;32m'
 V_BOLD_YELLOW=$'\e[1;33m'
 V_VIDOFF=$'\e[m'
 if [[ "$COLOR" = "false" ]]; then
-  unset V_BOLD_RED
-  unset V_BOLD_GREEN
-  unset V_BOLD_YELLOW
-  unset V_VIDOFF
+  V_BOLD_RED=""
+  V_BOLD_GREEN=""
+  V_BOLD_YELLOW=""
+  V_VIDOFF=""
 fi
 
 LOG_RUNTIME_PREFIX=${LOG_RUNTIME_PREFIX:-"fydeos_backup"}

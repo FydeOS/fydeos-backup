@@ -8,7 +8,6 @@ AUTH_SESSION_ID=""
 start_auth_session() {
   local email="$1"
   AUTH_SESSION_ID=$(cryptohome --action=start_auth_session --user="$email" \
-    | tee /dev/tty \
     | grep -oE 'auth_session_id: .*' | awk '{print $2}')
   if [[ -z "$AUTH_SESSION_ID" ]]; then
     echo "Failed to start auth session"

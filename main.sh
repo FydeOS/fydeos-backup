@@ -82,7 +82,7 @@ prompt_info() {
 }
 
 prompt_for_password() {
-  if [[ -n "$PASSWORD" ]]; then
+  if [[ -n "$PASSWORD" ]] && [[ "$COLOR" = "true" ]]; then
     warn "Setting password in command line arguments is not recommended. The script will prompt for your password."
     return
   fi
