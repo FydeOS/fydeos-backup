@@ -356,6 +356,10 @@ main() {
         $AUTO_MOUNT_BIN
         exit 0
         ;;
+      unmount)
+        $AUTO_MOUNT_BIN "unmount"
+        exit 0
+        ;;
       -h|--help)
         usage
         ;;

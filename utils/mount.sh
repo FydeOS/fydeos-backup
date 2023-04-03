@@ -15,6 +15,9 @@ dbus_method() {
 }
 
 
+unmount_all() {
+  dbus_method "UnmountAll"
+}
 
 enumerate_devices() {
   dbus_method "EnumerateDevices" | awk '{print $2}'
@@ -116,9 +119,13 @@ maybe_mount() {
 }
 
 main() {
+  if [[ "$1" = "unmount" ]]; then
+    unmount_all
+    exit 0
+  fi
   enumerate_devices | while read -r device; do
     maybe_mount "$device"
   done
 }
 
-main
+main "$@"
