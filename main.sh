@@ -6,6 +6,7 @@ SCRIPT_LIB_DIR="$SCRIPT_ROOT_DIR/lib"
 readonly SCRIPT_LIB_DIR
 
 LIST_BACKUP_FILE_LIST_BIN="$SCRIPT_ROOT_DIR/utils/list.sh"
+AUTO_MOUNT_BIN="$SCRIPT_ROOT_DIR/utils/mount.sh"
 
 # shellcheck source=lib/base.sh
 source "$SCRIPT_LIB_DIR/base.sh"
@@ -349,6 +350,10 @@ main() {
         ;;
       list)
         $LIST_BACKUP_FILE_LIST_BIN
+        exit 0
+        ;;
+      auto-mount)
+        $AUTO_MOUNT_BIN
         exit 0
         ;;
       -h|--help)
