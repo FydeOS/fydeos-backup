@@ -217,11 +217,16 @@ restore_backup_files() {
     exit 1
   fi
 
-  stop_chronos_processes || { error "Failed to stop chronos processes, abort"; restart_ui; exit 1; }
   set +o errexit # disable exit on error, we need to restart ui anyway
+  if [[ ! "$DELAY_STOPPING_PROCESSES" = "true" ]]; then
+    stop_chronos_processes || { error "Failed to stop chronos processes, abort"; restart_ui; exit 1; }
+  fi
   restore_chrome_profile
   restore_android_data
-  restore_extra_data "$email"
+  if [[ "$DELAY_STOPPING_PROCESSES" = "true" ]]; then
+    stop_chronos_processes || { warn "Failed to stop chronos processes, but we still need to try to change Local State"; }
+    restore_extra_data "$email"
+  fi
   set -o errexit
 
   if [[ "$create_new_user" = "true" ]]; then

@@ -255,6 +255,7 @@ do_restore() {
       fatal "Please logout any session or just reboot and run the script again"
     fi
     prompt_for_password
+    DELAY_STOPPING_PROCESSES="true"
     if [[ ! "$CREATE_NEW_USER" = "true" ]]; then
       trap "post_cryptohome_action" SIGINT SIGTERM ERR
       try_to_login_as_user "$USER_EMAIL" "$PASSWORD"
