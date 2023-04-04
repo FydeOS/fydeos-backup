@@ -182,7 +182,7 @@ restore_extra_data() {
     name=$(basename "$avatar_path")
     if [[ -f "$BACKUP_FILE_USER_AVATAR_DIR_NAME/$name" ]]; then
       debug "cp avatar image file $BACKUP_FILE_USER_AVATAR_DIR_NAME/$name to $avatar_path"
-      cp -f "$BACKUP_FILE_USER_AVATAR_DIR_NAME/$name" "$avatar_path"
+      cp -af "$BACKUP_FILE_USER_AVATAR_DIR_NAME/$name" "$avatar_path"
     fi
   fi
 }

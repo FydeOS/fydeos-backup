@@ -62,7 +62,7 @@ save_avatar_for_user() {
   debug "get user avatar path $path"
   if [[ "$path" = "/home/chronos/"* ]] && [[ -f "$path" ]]; then
     mkdir -p "$dir"
-    cp -f "$path" "$dir"
+    cp -af "$path" "$dir"
   fi
 }
 
