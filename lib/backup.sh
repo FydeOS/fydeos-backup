@@ -123,25 +123,30 @@ tar_backup_files() {
   local email="$1"
   local pass="$2"
   local target_path="$3"
-  local filename=""
+  local default_filename=""
   local datetime=""
   datetime="$(date +%Y%m%d_%H%M%S)"
   local email_in_filename=""
   email_in_filename=$(email_to_filename_with_underscore "$email")
-  filename="fydeos_backup_${email_in_filename}_${datetime}.tar.gz.gpg"
+  default_filename="fydeos_backup_${email_in_filename}_${datetime}.tar.gz.gpg"
   local intermediate_dir=""
 
   local dst=""
-  if [[ -n "$target_path" ]] && [[ -d "$target_path" ]]; then
-    dst="$target_path"
-    intermediate_dir="$target_path/.fydeos_backup_temp"
+  local final=""
+  local target_dir=""
+  target_dir="$(dirname "$target_path" || true)"
+  if [[ -n "$target_dir" ]] && [[ -d "$target_dir" ]]; then
+    dst="$target_dir"
+    intermediate_dir="$dst/.fydeos_backup_temp"
+    final="$target_path"
   else
+    warn "Invalid target path, using default /home/chronos/user/Downloads as target"
     dst="/home/chronos/user/Downloads"
     intermediate_dir="$INTERMEDIATE_BACKUP_RESTORE_FILE_PATH"
+    final="$dst/${default_filename}"
   fi
-  local final="$dst/${filename}"
 
-  local tmp="${intermediate_dir}/${filename}"
+  local tmp="${intermediate_dir}/${default_filename}"
   mkdir -p "${intermediate_dir}"
   echo "Backup the file to $final"
   local temp_dir=""
@@ -172,5 +177,5 @@ tar_backup_files() {
   rmdir "${temp_dir}" || true
   rmdir "${intermediate_dir}" || true
 
-  info "Tar backup files done, find the file $filename in $target_path"
+  info "Tar backup files done, $final"
 }

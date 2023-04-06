@@ -56,7 +56,7 @@ Options for backup:
   --email <email>         Specify the email of the user to be backed up
   --password <pass>       Specify the password to verify user identity and encrypt the backup file
                           Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
-  --path <path>           Specify the directory to store backup file
+  --target <filepath>     Specify the file path to store backup file
   -d, --debug             Enable debug mode
 
 Options for restore:
@@ -302,7 +302,7 @@ main() {
               shift
               shift
               ;;
-            --path)
+            --target)
               BACKUP_FILE_PATH="$2"
               shift
               shift
