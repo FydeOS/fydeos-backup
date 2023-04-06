@@ -122,18 +122,27 @@ email_to_filename_with_underscore() {
 tar_backup_files() {
   local email="$1"
   local pass="$2"
+  local target_path="$3"
   local filename=""
   local datetime=""
   datetime="$(date +%Y%m%d_%H%M%S)"
   local email_in_filename=""
   email_in_filename=$(email_to_filename_with_underscore "$email")
   filename="fydeos_backup_${email_in_filename}_${datetime}.tar.gz.gpg"
+  local intermediate_dir=""
 
-  local dst="/home/chronos/user/Downloads"
+  local dst=""
+  if [[ -n "$target_path" ]] && [[ -d "$target_path" ]]; then
+    dst="$target_path"
+    intermediate_dir="$target_path/.fydeos_backup_temp"
+  else
+    dst="/home/chronos/user/Downloads"
+    intermediate_dir="$INTERMEDIATE_BACKUP_RESTORE_FILE_PATH"
+  fi
   local final="$dst/${filename}"
 
-  local tmp="${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}/${filename}"
-  mkdir -p "${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}"
+  local tmp="${intermediate_dir}/${filename}"
+  mkdir -p "${intermediate_dir}"
   echo "Backup the file to $final"
   local temp_dir=""
   temp_dir=$(mktemp -d "/tmp/fydeos_backup_XXXXXXXX") || fatal "Failed to create temporary directory"
@@ -157,10 +166,11 @@ tar_backup_files() {
 
   mv "${tmp}" "${final}"
 
-  chown chronos:chronos "$final"
+  chown chronos:chronos-access "$final"
 
   clean_path "${temp_dir}"
   rmdir "${temp_dir}" || true
+  rmdir "${intermediate_dir}" || true
 
-  info "Tar backup files done, find the file $filename in Downloads folder of user $email"
+  info "Tar backup files done, find the file $filename in $target_path"
 }

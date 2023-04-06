@@ -40,6 +40,7 @@ WITH_MY_FILES="false"
 CREATE_NEW_USER="false"
 USER_EMAIL=""
 PASSWORD=""
+BACKUP_FILE_PATH=""
 
 usage() {
   cat <<EOF
@@ -52,16 +53,17 @@ Commands:
 
 Options for backup:
   --with-myfiles          Include 'My Files' in the backup
-  --email                 Specify the email of the user to be backed up
+  --email <email>         Specify the email of the user to be backed up
   --password <pass>       Specify the password to verify user identity and encrypt the backup file
                           Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
+  --path <path>           Specify the directory to store backup file
   -d, --debug             Enable debug mode
 
 Options for restore:
   -f, --file <file>       Specify the backup file to restore from
   --restore-mode <mode>   Specify the restore mode: ${RESTORE_MODE_MERGE} or ${RESTORE_MODE_REPLACE} (default: ${DEFAULT_RESTORE_MODE})
   -n, --new               Indicate that the user to be restored is a new user
-  --email                 Specify the email of the user to restore data, if -n/--new is specified, the script will create new user with the given email
+  --email <email>         Specify the email of the user to restore data, if -n/--new is specified, the script will create new user with the given email
   --password <pass>       Specify a password for new user's encrypted directory and decrypting backup file
                           Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
   -d, --debug             Enable debug mode
@@ -224,7 +226,7 @@ do_backup() {
 
   print_files_to_backup_disk_usage
 
-  tar_backup_files "$USER_EMAIL" "$PASSWORD"
+  tar_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE_PATH"
 
   post_cryptohome_action
 }
@@ -297,6 +299,11 @@ main() {
               ;;
             --email)
               USER_EMAIL="$2"
+              shift
+              shift
+              ;;
+            --path)
+              BACKUP_FILE_PATH="$2"
               shift
               shift
               ;;
