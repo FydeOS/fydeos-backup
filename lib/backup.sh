@@ -134,7 +134,9 @@ tar_backup_files() {
   local dst=""
   local final=""
   local target_dir=""
-  target_dir="$(dirname "$target_path" || true)"
+  if [[ -n "$target_path" ]]; then
+    target_dir="$(dirname "$target_path" || true)"
+  fi
   if [[ -n "$target_dir" ]] && [[ -d "$target_dir" ]]; then
     dst="$target_dir"
     intermediate_dir="$dst/.fydeos_backup_temp"
