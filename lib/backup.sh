@@ -125,7 +125,7 @@ tar_backup_files() {
   local target_path="$3"
   local default_filename=""
   local datetime=""
-  datetime="$(date +%Y%m%d_%H%M%S)"
+  datetime="$(date +%Y%m%d_%H%M)"
   local email_in_filename=""
   email_in_filename=$(email_to_filename_with_underscore "$email")
   default_filename="fydeos_backup_${email_in_filename}_${datetime}.tar.gz.gpg"
