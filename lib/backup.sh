@@ -123,6 +123,7 @@ tar_backup_files() {
   local email="$1"
   local pass="$2"
   local target_path="$3"
+  local key_phrase="$4"
   local default_filename=""
   local datetime=""
   datetime="$(date +%Y%m%d_%H%M)"
@@ -164,7 +165,14 @@ tar_backup_files() {
   trap "rm -f $tmp; clean_path $temp_dir; clean_path $intermediate_dir" SIGINT SIGTERM
   # tar might return non-zero exit code due to files changes or some other reasons
   local key=""
-  key=$(generate_key_for_backup_file "$email" "$pass")
+  if [[ -z "$KEYPHRASE" ]]; then
+    if [[ -z "$pass" ]]; then
+      fatal "Should not reach here, passphrase is empty"
+    fi
+    key=$(generate_key_for_backup_file "$email" "$pass")
+  else
+    key="$key_phrase"
+  fi
   debug "password for encryped backup file: $key"
   tar_with_extra "$key" "$tmp" "$temp_dir"
   if [[ ! -f "$tmp" ]]; then

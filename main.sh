@@ -40,6 +40,7 @@ WITH_MY_FILES="false"
 CREATE_NEW_USER="false"
 USER_EMAIL=""
 PASSWORD=""
+KEYPHRASE=""
 BACKUP_FILE_PATH=""
 
 usage() {
@@ -56,6 +57,7 @@ Options for backup:
   --email <email>         Specify the email of the user to be backed up
   --password <pass>       Specify the password to verify user identity and encrypt the backup file
                           Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
+  --keyphrase <pass>      Specify the keyphrase to encrypt the backup file, if not specified, the script will generate a keyphrase automatically
   --target <filepath>     Specify the file path to store backup file
   -d, --debug             Enable debug mode
 
@@ -219,14 +221,16 @@ do_backup() {
     assert_email_and_current_user_path "$USER_EMAIL"
   else
     assert_email_and_current_user_path "$USER_EMAIL"
-    prompt_for_password
-    verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
+    if [[ -z "$KEYPHRASE" ]]; then
+      prompt_for_password
+      verify_cryptohome_password "$USER_EMAIL" "$PASSWORD"
+    fi
   fi
 
 
   print_files_to_backup_disk_usage
 
-  tar_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE_PATH"
+  tar_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE_PATH" "$KEYPHRASE"
 
   post_cryptohome_action
 }
@@ -299,6 +303,11 @@ main() {
               ;;
             --email)
               USER_EMAIL="$2"
+              shift
+              shift
+              ;;
+            --key)
+              KEYPHRASE="$2"
               shift
               shift
               ;;
