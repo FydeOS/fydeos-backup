@@ -161,7 +161,7 @@ tar_backup_files() {
   backup_local_state_file "$email" "$temp_dir"
 
   # shellcheck disable=SC2064
-  trap "rm -f $tmp; clean_path $temp_dir" SIGINT SIGTERM
+  trap "rm -f $tmp; clean_path $temp_dir; clean_path $intermediate_dir" SIGINT SIGTERM
   # tar might return non-zero exit code due to files changes or some other reasons
   local key=""
   key=$(generate_key_for_backup_file "$email" "$pass")
