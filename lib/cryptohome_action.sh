@@ -89,3 +89,6 @@ try_to_login_as_user() {
   prepare_persistent_vault
 }
 
+get_system_salt() {
+  cryptohome --action=get_system_salt
+}

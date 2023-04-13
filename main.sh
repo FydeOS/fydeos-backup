@@ -68,6 +68,7 @@ Options for restore:
   --email <email>         Specify the email of the user to restore data, if -n/--new is specified, the script will create new user with the given email
   --password <pass>       Specify a password for new user's encrypted directory and decrypting backup file
                           Please note that it is not recommended to specify the password directly in the command line parameters. This script will prompt the user to enter the password when needed
+  --special-key <key>     Specify the special key to encrypt the backup file, the script will try to decode the key to get the password
   -d, --debug             Enable debug mode
 
 -h, --help            Display this help message and exit
@@ -235,11 +236,42 @@ do_backup() {
   post_cryptohome_action
 }
 
+decode_keyphrase_for_password() {
+  # the format is `B:base64(salt+password)`
+  local key="$1"
+  if [[ ! "$key" = "B:"* ]]; then
+    echo ""
+    return
+  fi
+  local content=""
+  content=$(echo "$key" | cut -d ':' -f 2)
+  if [[ -z "$content" ]]; then
+    echo ""
+    return
+  fi
+  local decoded=""
+  decoded=$(echo "$content" | base64 -d)
+  if [[ -z "$decoded" ]]; then
+    echo ""
+    return
+  fi
+  local salt=""
+  salt=$(get_system_salt)
+  if [[ -z "$salt" ]]; then
+    echo ""
+    return
+  fi
+  echo "${decoded#"$salt"}"
+}
+
 do_restore() {
   set_log_prefix "restore"
   assert_no_sudo_root
   if is_running_in_crosh; then
     die_with_usage "Please do not run the script inside crosh"
+  fi
+  if [[ -z "$PASSWORD" ]] && [[ -n "$KEYPHRASE" ]]; then
+    PASSWORD=$(decode_keyphrase_for_password "$KEYPHRASE")
   fi
   local restore_path=""
   if [[ "$CREATE_NEW_USER" = "true" ]]; then
@@ -352,6 +384,11 @@ main() {
               ;;
             --password)
               PASSWORD="$2"
+              shift
+              shift
+              ;;
+            --special-key)
+              KEYPHRASE="$2"
               shift
               shift
               ;;
