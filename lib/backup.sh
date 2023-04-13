@@ -116,7 +116,9 @@ tar_with_extra() {
 
 email_to_filename_with_underscore() {
   local email="$1"
-  echo "${email//[^[:alnum:]]/_}"
+  local name=""
+  name=$(echo "$email" | cut -d '@' -f 1)
+  echo "${name//[^[:alnum:]]/_}"
 }
 
 tar_backup_files() {
@@ -129,7 +131,7 @@ tar_backup_files() {
   datetime="$(date +%Y%m%d_%H%M)"
   local email_in_filename=""
   email_in_filename=$(email_to_filename_with_underscore "$email")
-  default_filename="fydeos_backup_${email_in_filename}_${datetime}.tar.gz.gpg"
+  default_filename="fydeos_${email_in_filename}_${datetime}.bak"
   local intermediate_dir=""
 
   local dst=""
@@ -176,7 +178,7 @@ tar_backup_files() {
   debug "password for encryped backup file: $key"
   tar_with_extra "$key" "$tmp" "$temp_dir"
   if [[ ! -f "$tmp" ]]; then
-    fatal "Faile to tar backup file"
+    fatal "Fail to tar backup file"
   fi
 
   mv "${tmp}" "${final}"

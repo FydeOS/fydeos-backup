@@ -27,7 +27,7 @@ readonly PARTITION_ELEMENT_JSON_FORMAT
 MEDIA_REMOVABLE_DIR_NAME="/media/removable/"
 readonly MEDIA_REMOVABLE_DIR_NAME
 
-BACKUP_FILE_FORMAT="fydeos_backup_*.tar.gz.gpg"
+BACKUP_FILE_FORMAT="fydeos_*.bak"
 readonly BACKUP_FILE_FORMAT
 
 get_file_size() {
