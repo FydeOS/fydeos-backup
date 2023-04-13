@@ -121,6 +121,18 @@ email_to_filename_with_underscore() {
   echo "${name//[^[:alnum:]]/_}"
 }
 
+append_email_to_file() {
+  local file="$1"
+  local email="$2"
+
+  local temp=""
+  temp=$(mktemp /tmp/XXXXXXXXX)
+  echo -n "$email" | base64 > "$temp"
+  truncate -s "$BACKUP_FILE_TAIL_SIZE" "$temp"
+  cat "$temp" >> "$file"
+  rm -f "$temp"
+}
+
 tar_backup_files() {
   local email="$1"
   local pass="$2"
@@ -180,6 +192,8 @@ tar_backup_files() {
   if [[ ! -f "$tmp" ]]; then
     fatal "Fail to tar backup file"
   fi
+
+  append_email_to_file "$tmp" "$email"
 
   mv "${tmp}" "${final}"
 

@@ -34,7 +34,7 @@ decrypt_uncompress_backup_file() {
   echo "Uncompressing $file to $target_path"
   mkdir -p "$target_path"
 
-  $GPG_BIN -d --passphrase "$key" "$file"  | tar --preserve-permissions -C "${target_path}" -xzvf -
+  head -c "-${BACKUP_FILE_TAIL_SIZE}" "$file" | $GPG_BIN -d --passphrase "$key" | tar --preserve-permissions -C "${target_path}" -xzvf -
 }
 
 prepare_backup_files() {

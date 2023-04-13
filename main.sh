@@ -312,6 +312,15 @@ do_restore() {
   post_cryptohome_action
 }
 
+peek() {
+  local file="$1"
+  if [[ ! -f "$file" ]]; then
+    echo ""
+    return
+  fi
+  tail -c "$BACKUP_FILE_TAIL_SIZE" "$file" | tr -d '\0'
+}
+
 main() {
   assert_root_user
   set +o errexit
@@ -413,6 +422,23 @@ main() {
       unmount)
         $AUTO_MOUNT_BIN "unmount"
         exit 0
+        ;;
+      peek)
+        shift
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            --file)
+              BACKUP_FILE="$2"
+              shift
+              shift
+              ;;
+            *)
+              usage 1
+              ;;
+          esac
+        done
+        peek "$BACKUP_FILE"
+        exit $?
         ;;
       -h|--help)
         usage
