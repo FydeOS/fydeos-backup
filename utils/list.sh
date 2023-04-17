@@ -9,7 +9,7 @@ FILE_ELEMENT_JSON_FORMAT=$(cat <<EOF
   "name": "",
   "path": "",
   "size": "",
-  "timestamp": "",
+  "timestamp": ""
 }
 EOF
 )
