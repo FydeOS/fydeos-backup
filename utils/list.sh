@@ -8,7 +8,8 @@ FILE_ELEMENT_JSON_FORMAT=$(cat <<EOF
 {
   "name": "",
   "path": "",
-  "size": ""
+  "size": "",
+  "timestamp": "",
 }
 EOF
 )
@@ -35,12 +36,18 @@ get_file_size() {
   stat -c "%s" "$file_path" | numfmt --to=iec --suffix=B
 }
 
+get_file_timestamp() {
+  local file_path="$1"
+  stat -c "%Z" "$file_path"
+}
+
 main() {
   local json_output="[]"
   local dir=""
   local filename=""
   local filepath=
   local filesize=
+  local timestamp=
   for d in $(findmnt -o TARGET -r | grep "${MEDIA_REMOVABLE_DIR_NAME}"); do
     if [[ ! -d "$d" ]]; then
       continue
@@ -53,7 +60,8 @@ main() {
       filepath="$f"
       filename="${f#"${MEDIA_REMOVABLE_DIR_NAME}${dir}"/}"
       filesize="$(get_file_size "$filepath")"
-      content="$(echo "$FILE_ELEMENT_JSON_FORMAT" | jq ". | .name = \"${filename}\" | .path = \"${filepath}\" | .size = \"${filesize}\"")"
+      timestamp="$(get_file_timestamp "$filepath")"
+      content="$(echo "$FILE_ELEMENT_JSON_FORMAT" | jq ". | .name = \"${filename}\" | .path = \"${filepath}\" | .size = \"${filesize}\" | .timestamp = \"${timestamp}\"")"
       ele=$(echo "$ele" | jq ".list |= .+ [${content}]")
     done
     json_output=$(echo "$json_output" | jq ". += [$ele]")
