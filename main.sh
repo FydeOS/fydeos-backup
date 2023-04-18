@@ -421,6 +421,8 @@ main() {
         exit 0
         ;;
       auto-mount)
+        $AUTO_MOUNT_BIN "unmount"
+        sleep 1
         $AUTO_MOUNT_BIN
         exit 0
         ;;
