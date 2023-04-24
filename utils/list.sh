@@ -1,6 +1,5 @@
 #!/bin/bash
 
-set -o errexit
 set -o nounset
 set -o pipefail
 
@@ -48,6 +47,7 @@ main() {
   local filepath=
   local filesize=
   local timestamp=
+  shopt -s nullglob
   for d in $(findmnt -o TARGET -r | grep "${MEDIA_REMOVABLE_DIR_NAME}"); do
     if [[ ! -d "$d" ]]; then
       continue
@@ -59,8 +59,8 @@ main() {
       local content=""
       filepath="$f"
       filename="${f#"${MEDIA_REMOVABLE_DIR_NAME}${dir}"/}"
-      filesize="$(get_file_size "$filepath")"
-      timestamp="$(get_file_timestamp "$filepath")"
+      filesize="$(get_file_size "$filepath" || echo "0")"
+      timestamp="$(get_file_timestamp "$filepath" || echo "0")"
       content="$(echo "$FILE_ELEMENT_JSON_FORMAT" | jq ". | .name = \"${filename}\" | .path = \"${filepath}\" | .size = \"${filesize}\" | .timestamp = \"${timestamp}\"")"
       ele=$(echo "$ele" | jq ".list |= .+ [${content}]")
     done
