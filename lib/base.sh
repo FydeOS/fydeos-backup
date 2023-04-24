@@ -24,7 +24,7 @@ USER_LOCAL_STATE_JSON_FILE_NAME="local_state.json"
 # shellcheck disable=SC2034
 readonly USER_LOCAL_STATE_JSON_FILE_NAME
 
-INTERMEDIATE_BACKUP_RESTORE_FILE_PATH="/mnt/stateful_partition/encrypted/chronos/.fydeos_backup"
+INTERMEDIATE_BACKUP_RESTORE_FILE_PATH="/mnt/stateful_partition/.fydeos_backup"
 # shellcheck disable=SC2034
 readonly INTERMEDIATE_BACKUP_RESTORE_FILE_PATH
 
