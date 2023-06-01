@@ -48,7 +48,7 @@ main() {
   local filesize=
   local timestamp=
   shopt -s nullglob
-  for d in $(findmnt -o TARGET -r | grep "${MEDIA_REMOVABLE_DIR_NAME}"); do
+  while read -r d; do
     if [[ ! -d "$d" ]]; then
       continue
     fi
@@ -65,7 +65,7 @@ main() {
       ele=$(echo "$ele" | jq ".list |= .+ [${content}]")
     done
     json_output=$(echo "$json_output" | jq ". += [$ele]")
-  done
+  done < <(findmnt -o TARGET -l | grep "${MEDIA_REMOVABLE_DIR_NAME}")
 
   echo "$json_output"
 }
