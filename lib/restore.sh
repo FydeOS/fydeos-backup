@@ -26,7 +26,7 @@ clean_intermediate_files() {
   clean_path "${INTERMEDIATE_BACKUP_RESTORE_FILE_PATH}"
 }
 
-decrypt_uncompress_backup_file() {
+decrypt_uncompress_backup_file_with_tar() {
   local file="$1"
   local target_path="$2"
   local key="$3"
@@ -35,6 +35,19 @@ decrypt_uncompress_backup_file() {
   mkdir -p "$target_path"
 
   head -c "-${BACKUP_FILE_TAIL_SIZE}" "$file" | $GPG_BIN -d --passphrase "$key" | tar --preserve-permissions -C "${target_path}" -xzvf -
+}
+
+decrypt_uncompress_backup_file_with_dar() {
+  local file="$1"
+  local target_path="$2"
+  local key="$3"
+
+  echo "Uncompressing $file to $target_path"
+  mkdir -p "$target_path"
+
+  head -c "-${BACKUP_FILE_TAIL_SIZE}" "$file" | dar -x - -K "$key" --sequential-read -R "$target_path"
+  local fixed_temp_extra_path="$FIXED_TEMP_EXTRA_DATA_PATH_USED_BY_DAR"
+  mv "${target_path}/${fixed_temp_extra_path}"/* "$target_path"
 }
 
 prepare_backup_files() {
@@ -46,7 +59,11 @@ prepare_backup_files() {
   key=$(generate_key_for_backup_file "$email" "$pass")
   debug "the key to decrypt backup file is $key"
 
-  decrypt_uncompress_backup_file "$backup_file" "$INTERMEDIATE_BACKUP_RESTORE_FILE_PATH" "$key"
+  if ! is_dar_exists  || is_obsolete_file_format "$backup_file"; then
+    decrypt_uncompress_backup_file_with_tar "$backup_file" "$INTERMEDIATE_BACKUP_RESTORE_FILE_PATH" "$key"
+  else
+    decrypt_uncompress_backup_file_with_dar "$backup_file" "$INTERMEDIATE_BACKUP_RESTORE_FILE_PATH" "$key"
+  fi
   if [[ ! -d "${BACKUP_FILE_CHROME_PROFILE_DIR_NAME}" ]]; then
     warn "No Chrome profile directory found in backup file"
   fi

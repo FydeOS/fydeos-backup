@@ -114,6 +114,57 @@ tar_with_extra() {
   set -o pipefail
 }
 
+dar_with_extra() {
+  local key="$1"
+  local target="$2"
+  local extra_dir="$3"
+  local base_dir=""
+  base_dir=$(get_current_user_base_path)
+  if [[ -z "$base_dir" ]] || [[ ! -d "$base_dir" ]]; then
+    fatal "Unable to get current user base path"
+  fi
+  echo "Backing up files ${base_dir}/${CHROME_PROFILE_SUBDIR_NAME} and ${base_dir}/${ANDROID_DATA_SUBDIR_NAME}"
+  base_dir="${base_dir#*/}" #remove leading slash
+
+  local fixed_temp_extra_path="${base_dir}/$FIXED_TEMP_EXTRA_DATA_PATH_USED_BY_DAR"
+  rm -rf "$fixed_temp_extra_path"
+  mv "$extra_dir" "$fixed_temp_extra_path"
+
+  local temp_dar_target=""
+
+  # shellcheck disable=SC2064
+  trap "rm -fr $fixed_temp_extra_path" SIGINT SIGTERM ERR
+
+  temp_dar_target="${target}_$(date +%s)"
+  # "${target}_$(date +%s).1.dar" is expected
+  if [[ "$WITH_MY_FILES" = "false" ]]; then
+    dar -c "$temp_dar_target" -z -K "$key" \
+        -R "${base_dir}" \
+        -g "${FIXED_TEMP_EXTRA_DATA_PATH_USED_BY_DAR}" \
+        -g "${CHROME_PROFILE_SUBDIR_NAME}" \
+        -g "${ANDROID_DATA_SUBDIR_NAME}" \
+        -P "${CHROME_PROFILE_SUBDIR_NAME}/${MY_FILES_PATH_NAME}" \
+        -P "${CHROME_PROFILE_SUBDIR_NAME}/${DOWNLOADS_PATH_NAME}" \
+        --retry-on-change 5
+  else
+    dar -c "$temp_dar_target" -z -K "$key" \
+        -R "${base_dir}" \
+        -g "${FIXED_TEMP_EXTRA_DATA_PATH_USED_BY_DAR}" \
+        -g "${CHROME_PROFILE_SUBDIR_NAME}" \
+        -g "${ANDROID_DATA_SUBDIR_NAME}" \
+        -P "${CHROME_PROFILE_SUBDIR_NAME}/${DOWNLOADS_PATH_NAME}" \
+        --retry-on-change 5
+  fi
+  sync
+  rm -rf "$fixed_temp_extra_path"
+  local expect="${temp_dar_target}.1.dar"
+  if [[ -f "$expect" ]]; then
+    mv "$expect" "$target"
+  else
+    fatal "Unable to find expected dar file $expect"
+  fi
+}
+
 email_to_filename_with_underscore() {
   local email="$1"
   local name=""
@@ -188,7 +239,11 @@ tar_backup_files() {
     key="$key_phrase"
   fi
   debug "password for encryped backup file: $key"
-  tar_with_extra "$key" "$tmp" "$temp_dir"
+  if is_dar_exists; then
+    dar_with_extra "$key" "$tmp" "$temp_dir"
+  else
+    tar_with_extra "$key" "$tmp" "$temp_dir"
+  fi
   if [[ ! -f "$tmp" ]]; then
     fatal "Fail to tar backup file"
   fi

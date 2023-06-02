@@ -39,6 +39,8 @@ readonly GPG_BIN
 
 readonly BACKUP_FILE_TAIL_SIZE=1024
 
+readonly FIXED_TEMP_EXTRA_DATA_PATH_USED_BY_DAR=".temp_fydeos_backup_extra"
+
 CURRENT_USER_BASE_PATH=""
 CURRENT_USER_CHROME_DATA_DIR=""
 CURRENT_USER_ANDROID_DATA_DIR=""
@@ -210,4 +212,16 @@ assert_email_and_current_user_path() {
 
 set_oobe_complete_mark() {
   touch /home/chronos/.oobe_complete
+}
+
+is_dar_exists() {
+  command -v dar > /dev/null 2>&1
+}
+
+is_obsolete_file_format() {
+  local file="$1"
+  local content=""
+  content=$(tail -c "$BACKUP_FILE_TAIL_SIZE" "$file" | tr -d '\0' | base64 -d)
+  # the new content at the end of the file should be a json object, starts with '{'
+  [[ ! "$content" = "{"* ]]
 }
