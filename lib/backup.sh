@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# shellcheck source=lib/version.sh
+source "$SCRIPT_LIB_DIR/version.sh"
 # shellcheck source=./lib/base.sh
 source "$SCRIPT_LIB_DIR/base.sh"
 
@@ -172,13 +174,40 @@ email_to_filename_with_underscore() {
   echo "${name//[^[:alnum:]]/_}"
 }
 
-append_email_to_file() {
+generate_extra_plain_metadata_for_backup_file() {
+  local email="$1"
+  local result=""
+  local board=""
+  local chromiumos_version=""
+  local fydeos_version=""
+  local script_version=""
+  board=$(get_board_name)
+  chromiumos_version=$(get_chromiumos_version)
+  fydeos_version=$(get_fydeos_version)
+  script_version=$(version)
+  result="$(cat << EOF
+{
+  "email": "$email",
+  "board": "$board",
+  "chromiumos_version": "$chromiumos_version",
+  "fydeos_version": "$fydeos_version",
+  "tool": "dar",
+  "script_version": "$script_version"
+}
+EOF
+)"
+  echo "$result"
+}
+
+append_plain_metadata_to_file() {
   local file="$1"
   local email="$2"
 
   local temp=""
   temp=$(mktemp /tmp/XXXXXXXXX)
-  echo -n "$email" | base64 > "$temp"
+  local content=""
+  content=$(generate_extra_plain_metadata_for_backup_file "$email")
+  echo -n "$content" | base64 > "$temp"
   truncate -s "$BACKUP_FILE_TAIL_SIZE" "$temp"
   cat "$temp" >> "$file"
   rm -f "$temp"
@@ -248,7 +277,7 @@ tar_backup_files() {
     fatal "Fail to tar backup file"
   fi
 
-  append_email_to_file "$tmp" "$email"
+  append_plain_metadata_to_file "$tmp" "$email"
 
   mv "${tmp}" "${final}"
 

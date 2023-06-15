@@ -225,3 +225,38 @@ is_obsolete_file_format() {
   # the new content at the end of the file should be a json object, starts with '{'
   [[ ! "$content" = "{"* ]]
 }
+
+declare -r LSB_RELEASE_FILE="/etc/lsb-release"
+
+get_value_from_lsb_release() {
+  if [[ ! -f "$LSB_RELEASE_FILE" ]]; then
+    return
+  fi
+  local key="$1"
+  local value=""
+  value=$(grep "^${key}=" "$LSB_RELEASE_FILE" | cut -d= -f2-)
+  echo "$value"
+}
+
+get_board_name() {
+  get_value_from_lsb_release "CHROMEOS_RELEASE_BOARD"
+}
+
+get_chromiumos_version() {
+  get_value_from_lsb_release "CHROMEOS_RELEASE_VERSION"
+}
+
+get_fydeos_version() {
+  local prefix="Release Build"
+  local str=""
+  local result=""
+  str=$(get_value_from_lsb_release "CHROMEOS_RELEASE_BUILD_TYPE")
+  if [[ $str == $prefix* ]]; then
+    result=${str#"$prefix"}
+    result=${result##*( )}
+    result=${result%%*( )}
+  else
+    result="$str"
+  fi
+  echo "$result"
+}
