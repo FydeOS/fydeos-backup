@@ -253,8 +253,7 @@ get_fydeos_version() {
   str=$(get_value_from_lsb_release "CHROMEOS_RELEASE_BUILD_TYPE")
   if [[ $str == $prefix* ]]; then
     result=${str#"$prefix"}
-    result=${result##*( )}
-    result=${result%%*( )}
+    result=$(echo "$result" | tr -d '[:space:]')
   else
     result="$str"
   fi
