@@ -43,7 +43,7 @@ CREATE_NEW_USER="false"
 USER_EMAIL=""
 PASSWORD=""
 KEYPHRASE=""
-BACKUP_FILE_PATH=""
+TARGET_BACKUP_FILE_PATH=""
 
 usage() {
   cat <<EOF
@@ -127,6 +127,7 @@ print_params() {
   debug "ACTION: $ACTION"
   debug "RESTORE_MODE: $RESTORE_MODE"
   debug "BACKUP_FILE: $BACKUP_FILE"
+  debug "TARGET_BACKUP_FILE_PATH: $TARGET_BACKUP_FILE_PATH"
   debug "WITH_MY_FILES: $WITH_MY_FILES"
   debug "CREATE_NEW_USER: $CREATE_NEW_USER"
   debug "USER_EMAIL: $USER_EMAIL"
@@ -139,6 +140,9 @@ verify_params() {
   fi
   if [[ ! $ACTION = "$ACTION_RESTORE" ]] && [[ -n "$RESTORE_MODE" ]]; then
     info "Restore mode will be ignored for $ACTION action"
+  fi
+  if [[ "$ACTION" = "$ACTION_BACKUP" ]] && [[ -z "$TARGET_BACKUP_FILE_PATH" ]]; then
+      fatal "The target backup file path is required for $ACTION action"
   fi
   if [[ "$ACTION" = "$ACTION_RESTORE" ]]; then
     if [[ -z "$RESTORE_MODE" ]]; then
@@ -233,7 +237,7 @@ do_backup() {
 
   print_files_to_backup_disk_usage
 
-  tar_backup_files "$USER_EMAIL" "$PASSWORD" "$BACKUP_FILE_PATH" "$KEYPHRASE"
+  tar_backup_files "$USER_EMAIL" "$PASSWORD" "$TARGET_BACKUP_FILE_PATH" "$KEYPHRASE"
 
   post_cryptohome_action
 }
@@ -323,6 +327,17 @@ peek() {
   tail -c "$BACKUP_FILE_TAIL_SIZE" "$file" | tr -d '\0'
 }
 
+parse_file_path() {
+  local text="$1"
+  if [[ "$text" = "/"* ]]; then
+    echo "$text"
+    return
+  fi
+  local result=""
+  result=$(echo "$text" | base64 -d 2>/dev/null || echo "")
+  echo "$result"
+}
+
 main() {
   assert_root_user
   set +o errexit
@@ -355,7 +370,7 @@ main() {
               shift
               ;;
             --target)
-              BACKUP_FILE_PATH="$2"
+              TARGET_BACKUP_FILE_PATH=$(parse_file_path "$2")
               shift
               shift
               ;;
@@ -380,7 +395,7 @@ main() {
               shift
               ;;
             -f|--file)
-              BACKUP_FILE="$2"
+              BACKUP_FILE=$(parse_file_path "$2")
               shift
               shift
               ;;
@@ -432,7 +447,7 @@ main() {
         while [[ $# -gt 0 ]]; do
           case "$1" in
             --file)
-              BACKUP_FILE="$2"
+              BACKUP_FILE=$(parse_file_path "$2")
               shift
               shift
               ;;
