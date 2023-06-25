@@ -185,7 +185,10 @@ generate_extra_plain_metadata_for_backup_file() {
   chromiumos_version=$(get_chromiumos_version)
   fydeos_version=$(get_fydeos_version)
   script_version=$(version)
-  result="$(cat << EOF
+  if [[ "$chromiumos_version" = "15183."* ]]; then
+    result="$email"
+  else
+    result="$(cat << EOF
 {
   "email": "$email",
   "board": "$board",
@@ -196,6 +199,7 @@ generate_extra_plain_metadata_for_backup_file() {
 }
 EOF
 )"
+  fi
   echo "$result"
 }
 
