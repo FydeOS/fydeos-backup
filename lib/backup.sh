@@ -238,7 +238,7 @@ tar_backup_files() {
   fi
   if [[ -n "$target_dir" ]] && [[ -d "$target_dir" ]]; then
     dst="$target_dir"
-    intermediate_dir="$dst/.fydeos_backup_temp"
+    intermediate_dir="$INTERMEDIATE_BACKUP_RESTORE_FILE_PATH"
     final="$target_path"
   else
     warn "Invalid target path, using default /home/chronos/user/Downloads as target"
