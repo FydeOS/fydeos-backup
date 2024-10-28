@@ -155,7 +155,7 @@ restore_chrome_profile() {
 assert_android_backup_folder_permission() {
   local perm=""
   perm=$(stat -c "%A.%U.%G" "$BACKUP_FILE_ANDROID_DATA_DIR_NAME")
-  [[ "$perm" = "drwx------.android-root.android-root" ]]
+  [[ "$perm" = "drwx------.android-root.android-root" ]] || [[ "$perm" = "drwxr-x---.android-root.crosvm" ]]
 }
 
 restore_android_data() {
